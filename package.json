@@ -68,11 +68,11 @@
   },
   "lint-staged": {
     "*.+(js|jsx|ts|tsx)": [
-      "yarn eslint --fix"
+      "pnpm exec eslint --fix"
     ],
     "*.+(js|jsx|ts|tsx|json|css|md|mdx)": [
-      "yarn prettier --write"
+      "pnpm exec prettier --write"
     ]
   },
-  "packageManager": "yarn@3.6.1"
+  "packageManager": "pnpm@10.28.1"
 }

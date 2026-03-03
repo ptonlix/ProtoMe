@@ -192,7 +192,7 @@ npx degit 'timlrx/tailwind-nextjs-starter-blog'
 ## Installation
 
 ```bash
-yarn
+pnpm install
 ```
 
 Please note, that if you are using Windows, you may need to run:
@@ -206,7 +206,7 @@ $env:PWD = $(Get-Location).Path
 First, run the development server:
 
 ```bash
-yarn dev
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
@@ -307,7 +307,7 @@ See [Next.js on Netlify](https://docs.netlify.com/integrations/frameworks/next-j
 Run:
 
 ```sh
-$ EXPORT=1 UNOPTIMIZED=1 yarn build
+$ EXPORT=1 UNOPTIMIZED=1 pnpm build
 ```
 
 Then, deploy the generated `out` folder or run `npx serve out` it locally.
@@ -316,10 +316,10 @@ Then, deploy the generated `out` folder or run `npx serve out` it locally.
 > If deploying with a URL base path, like https://example.org/myblog you need an extra `BASE_PATH` shell-var to the build command:
 >
 > ```sh
-> $ EXPORT=1 UNOPTIMIZED=1 BASE_PATH=/myblog yarn build
+> $ EXPORT=1 UNOPTIMIZED=1 BASE_PATH=/myblog pnpm build
 > ```
 >
-> => In your code, `${process.env.BASE_PATH || ''}/robots.txt` will print `"/myblog/robots.txt"` in the `out` build (or only `/robots.txt` if `yarn dev`, ie: on localhost:3000)
+> => In your code, `${process.env.BASE_PATH || ''}/robots.txt` will print `"/myblog/robots.txt"` in the `out` build (or only `/robots.txt` if `pnpm dev`, ie: on localhost:3000)
 
 > [!TIP]
 > Alternatively to `UNOPTIMIZED=1`, to continue using `next/image`, you can use an alternative image optimization provider such as Imgix, Cloudinary or Akamai. See [image optimization documentation](https://nextjs.org/docs/app/building-your-application/deploying/static-exports#image-optimization) for more details.
