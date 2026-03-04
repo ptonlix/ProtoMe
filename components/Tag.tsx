@@ -5,10 +5,15 @@ interface Props {
   basePath?: string
 }
 
-const Tag = ({ text, basePath = '/tags' }: Props) => {
+const Tag = ({ text, basePath = '/blog' }: Props) => {
+  const href =
+    basePath === '/blog'
+      ? `/blog?tag=${encodeURIComponent(slug(text))}`
+      : `${basePath}/${slug(text)}`
+
   return (
     <Link
-      href={`${basePath}/${slug(text)}`}
+      href={href}
       className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400 mr-3 text-sm font-medium uppercase"
     >
       {text.split(' ').join('-')}
