@@ -28,6 +28,8 @@ import prettier from 'prettier'
 
 const root = process.cwd()
 const isProduction = process.env.NODE_ENV === 'production'
+const privacyOptions = ['public', 'private', 'restricted'] as const
+const projectStatusOptions = ['idea', 'active', 'paused', 'completed', 'archived'] as const
 
 // heroicon mini link
 const icon = fromHtmlIsomorphic(
@@ -78,6 +80,27 @@ async function createTagCount(allBlogs) {
   })
   const formatted = await prettier.format(JSON.stringify(tagCount, null, 2), { parser: 'json' })
   writeFileSync('./app/tag-data.json', formatted)
+}
+
+/**
+ * Count the occurrences of all tags across public worklogs and write to json file
+ */
+async function createWorklogTagCount(allWorklogs) {
+  const tagCount: Record<string, number> = {}
+  allWorklogs.forEach((file) => {
+    if (file.privacy === 'public' && file.tags) {
+      file.tags.forEach((tag) => {
+        const formattedTag = slug(tag)
+        if (formattedTag in tagCount) {
+          tagCount[formattedTag] += 1
+        } else {
+          tagCount[formattedTag] = 1
+        }
+      })
+    }
+  })
+  const formatted = await prettier.format(JSON.stringify(tagCount, null, 2), { parser: 'json' })
+  writeFileSync('./app/worklog-tag-data.json', formatted)
 }
 
 function createSearchIndex(allBlogs) {
@@ -147,9 +170,68 @@ export const Authors = defineDocumentType(() => ({
   computedFields,
 }))
 
+export const Profile = defineDocumentType(() => ({
+  name: 'Profile',
+  filePathPattern: 'profile/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    name: { type: 'string', required: true },
+    headline: { type: 'string', required: true },
+    updatedAt: { type: 'date', required: true },
+    email: { type: 'string' },
+    location: { type: 'string' },
+    website: { type: 'string' },
+    skills: { type: 'list', of: { type: 'string' }, default: [] },
+    highlights: { type: 'list', of: { type: 'string' }, default: [] },
+    privacy: { type: 'enum', options: privacyOptions, default: 'public' },
+  },
+  computedFields,
+}))
+
+export const Project = defineDocumentType(() => ({
+  name: 'Project',
+  filePathPattern: 'projects/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    id: { type: 'string', required: true },
+    title: { type: 'string', required: true },
+    status: { type: 'enum', options: projectStatusOptions, required: true },
+    startedAt: { type: 'date', required: true },
+    updatedAt: { type: 'date', required: true },
+    summary: { type: 'string' },
+    stack: { type: 'list', of: { type: 'string' }, default: [] },
+    repo: { type: 'string' },
+    demo: { type: 'string' },
+    role: { type: 'string' },
+    highlights: { type: 'list', of: { type: 'string' }, default: [] },
+    tags: { type: 'list', of: { type: 'string' }, default: [] },
+    privacy: { type: 'enum', options: privacyOptions, default: 'public' },
+  },
+  computedFields,
+}))
+
+export const Worklog = defineDocumentType(() => ({
+  name: 'Worklog',
+  filePathPattern: 'worklogs/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    date: { type: 'date', required: true },
+    title: { type: 'string', required: true },
+    summary: { type: 'string', required: true },
+    updatedAt: { type: 'date', required: true },
+    projects: { type: 'list', of: { type: 'string' }, default: [] },
+    tags: { type: 'list', of: { type: 'string' }, default: [] },
+    focus: { type: 'list', of: { type: 'string' }, default: [] },
+    nextActions: { type: 'list', of: { type: 'string' }, default: [] },
+    aiGenerated: { type: 'boolean', default: false },
+    privacy: { type: 'enum', options: privacyOptions, default: 'public' },
+  },
+  computedFields,
+}))
+
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors],
+  documentTypes: [Blog, Authors, Profile, Project, Worklog],
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [
@@ -180,8 +262,9 @@ export default makeSource({
     ],
   },
   onSuccess: async (importData) => {
-    const { allBlogs } = await importData()
+    const { allBlogs, allWorklogs } = await importData()
     createTagCount(allBlogs)
+    createWorklogTagCount(allWorklogs)
     createSearchIndex(allBlogs)
   },
 })

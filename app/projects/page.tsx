@@ -1,10 +1,14 @@
-import projectsData from '@/data/projectsData'
 import Card from '@/components/Card'
+import { allProjects } from 'contentlayer/generated'
 import { genPageMetadata } from 'app/seo'
 
 export const metadata = genPageMetadata({ title: 'Projects' })
 
 export default function Projects() {
+  const projects = [...allProjects]
+    .filter((item) => item.privacy === 'public')
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+
   return (
     <>
       <div className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -13,21 +17,31 @@ export default function Projects() {
             Projects
           </h1>
           <p className="text-lg leading-7 text-gray-500 dark:text-gray-400">
-            Showcase your projects with a hero image (16 x 9)
+            按更新时间展示公开项目，支持从结构化数据持续沉淀个人项目资产。
           </p>
         </div>
         <div className="container py-12">
           <div className="-m-4 flex flex-wrap">
-            {projectsData.map((d) => (
+            {projects.map((d) => (
               <Card
-                key={d.title}
+                key={d.id}
                 title={d.title}
-                description={d.description}
-                imgSrc={d.imgSrc}
-                href={d.href}
+                description={d.summary ?? '暂无项目摘要。'}
+                href={d.demo || d.repo}
+                status={d.status}
+                role={d.role}
+                updatedAt={d.updatedAt}
+                stack={d.stack}
+                repo={d.repo}
+                demo={d.demo}
               />
             ))}
           </div>
+          {projects.length === 0 && (
+            <p className="px-4 text-gray-500 dark:text-gray-400">
+              暂无公开项目，请在 `data/projects/**/*.mdx` 中新增或将 `privacy` 设置为 `public`。
+            </p>
+          )}
         </div>
       </div>
     </>
