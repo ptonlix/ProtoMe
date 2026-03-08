@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { slug } from 'github-slugger'
 import { formatDate } from 'pliny/utils/formatDate'
 import { CoreContent } from 'pliny/utils/contentlayer'
@@ -15,6 +15,7 @@ interface PaginationProps {
   totalPages: number
   currentPage: number
 }
+
 interface ListLayoutProps {
   posts: CoreContent<Blog>[]
   title: string
@@ -24,11 +25,7 @@ interface ListLayoutProps {
 
 interface CategoryGroup {
   category: string
-  posts: Array<{
-    path: string
-    title: string
-    date: string
-  }>
+  postCount: number
 }
 
 function getCategoryFromPath(path: string) {
@@ -37,73 +34,73 @@ function getCategoryFromPath(path: string) {
   return pathParts.length > 1 ? pathParts[0] : 'other'
 }
 
-function getCategoryGroups(posts: CoreContent<Blog>[]): CategoryGroup[] {
-  const groups = new Map<string, CategoryGroup['posts']>()
-
-  posts.forEach((post) => {
-    const category = getCategoryFromPath(post.path)
-    const groupPosts = groups.get(category) || []
-    groupPosts.push({
-      path: post.path,
-      title: post.title,
-      date: post.date,
-    })
-    groups.set(category, groupPosts)
-  })
-
-  return Array.from(groups.entries())
-    .map(([category, groupPosts]) => ({
-      category,
-      posts: groupPosts.sort((a, b) => +new Date(b.date) - +new Date(a.date)),
-    }))
-    .sort((a, b) => a.category.localeCompare(b.category))
-}
-
 function formatCategoryLabel(category: string) {
   if (category === 'other') return 'Other'
   if (/^[a-z]{2,3}$/i.test(category)) return category.toUpperCase()
   return category.replace(/[-_]/g, ' ')
 }
 
+function getCategoryGroups(posts: CoreContent<Blog>[]): CategoryGroup[] {
+  const map = new Map<string, number>()
+  posts.forEach((post) => {
+    const category = getCategoryFromPath(post.path)
+    map.set(category, (map.get(category) || 0) + 1)
+  })
+
+  return Array.from(map.entries())
+    .map(([category, postCount]) => ({ category, postCount }))
+    .sort((a, b) => a.category.localeCompare(b.category))
+}
+
 function Pagination({ totalPages, currentPage }: PaginationProps) {
   const pathname = usePathname()
-  const segments = pathname.split('/')
-  const lastSegment = segments[segments.length - 1]
   const basePath = pathname
-    .replace(/^\//, '') // Remove leading slash
-    .replace(/\/page\/\d+\/?$/, '') // Remove any trailing /page
-    .replace(/\/$/, '') // Remove trailing slash
+    .replace(/^\//, '')
+    .replace(/\/page\/\d+\/?$/, '')
+    .replace(/\/$/, '')
+
   const prevPage = currentPage - 1 > 0
   const nextPage = currentPage + 1 <= totalPages
 
   return (
-    <div className="space-y-2 pt-6 pb-8 md:space-y-5">
-      <nav className="flex justify-between">
-        {!prevPage && (
-          <button className="cursor-auto disabled:opacity-50" disabled={!prevPage}>
-            Previous
-          </button>
-        )}
-        {prevPage && (
+    <div className="pt-5 pb-3">
+      <nav className="flex items-center justify-between gap-2" aria-label="分页导航">
+        {prevPage ? (
           <Link
             href={currentPage - 1 === 1 ? `/${basePath}/` : `/${basePath}/page/${currentPage - 1}`}
             rel="prev"
+            className="ledger-btn ledger-btn-secondary text-xs"
           >
-            Previous
+            上一页
           </Link>
-        )}
-        <span>
-          {currentPage} of {totalPages}
-        </span>
-        {!nextPage && (
-          <button className="cursor-auto disabled:opacity-50" disabled={!nextPage}>
-            Next
+        ) : (
+          <button
+            className="ledger-btn ledger-btn-secondary cursor-not-allowed opacity-50"
+            disabled
+          >
+            上一页
           </button>
         )}
-        {nextPage && (
-          <Link href={`/${basePath}/page/${currentPage + 1}`} rel="next">
-            Next
+
+        <span className="text-ledger-muted font-mono text-xs tracking-[0.1em] uppercase">
+          {currentPage} / {totalPages}
+        </span>
+
+        {nextPage ? (
+          <Link
+            href={`/${basePath}/page/${currentPage + 1}`}
+            rel="next"
+            className="ledger-btn ledger-btn-secondary text-xs"
+          >
+            下一页
           </Link>
+        ) : (
+          <button
+            className="ledger-btn ledger-btn-secondary cursor-not-allowed opacity-50"
+            disabled
+          >
+            下一页
+          </button>
         )}
       </nav>
     </div>
@@ -124,12 +121,14 @@ export default function ListLayoutWithTags({
   const isBlogRoute = pathname.startsWith('/blog')
 
   const tagCounts = tagData as Record<string, number>
-  const sortedTags = Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a])
-  const normalizedTagSearchKeyword = tagSearchKeyword.trim().toLowerCase()
-  const filteredTags = normalizedTagSearchKeyword
-    ? sortedTags.filter((tag) => tag.toLowerCase().includes(normalizedTagSearchKeyword))
-    : sortedTags
-  const categoryGroups = isBlogRoute ? getCategoryGroups(posts) : []
+  const sortedTags = useMemo(
+    () => Object.keys(tagCounts).sort((a, b) => tagCounts[b] - tagCounts[a]),
+    [tagCounts]
+  )
+  const categoryGroups = useMemo(
+    () => (isBlogRoute ? getCategoryGroups(posts) : []),
+    [isBlogRoute, posts]
+  )
 
   useEffect(() => {
     if (!isBlogRoute) {
@@ -140,8 +139,14 @@ export default function ListLayoutWithTags({
     setSelectedTagSlug(tagFromQuery ? slug(tagFromQuery) : null)
   }, [isBlogRoute, searchParams])
 
+  const normalizedTagSearchKeyword = tagSearchKeyword.trim().toLowerCase()
+  const filteredTags = normalizedTagSearchKeyword
+    ? sortedTags.filter((tag) => tag.toLowerCase().includes(normalizedTagSearchKeyword))
+    : sortedTags
+
   const displayPosts = initialDisplayPosts.length > 0 ? initialDisplayPosts : posts
   const hasActiveFilters = isBlogRoute && (selectedCategory !== null || selectedTagSlug !== null)
+
   const filteredDisplayPosts =
     isBlogRoute && hasActiveFilters
       ? posts.filter((post) => {
@@ -149,213 +154,174 @@ export default function ListLayoutWithTags({
             selectedCategory === null || getCategoryFromPath(post.path) === selectedCategory
           const tagMatched =
             selectedTagSlug === null || post.tags?.some((item) => slug(item) === selectedTagSlug)
-
           return categoryMatched && Boolean(tagMatched)
         })
       : displayPosts
 
   return (
-    <>
-      <div>
-        <div className="pt-6 pb-6">
-          <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:hidden sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
-            {title}
-          </h1>
-        </div>
-        <div className="flex sm:space-x-24">
-          <div className="hidden h-full max-h-screen max-w-[280px] min-w-[280px] flex-wrap overflow-auto sm:flex">
-            <div className="flex w-full flex-col gap-4 pb-4">
-              {isBlogRoute ? (
-                <>
-                  <div className="rounded-sm bg-gray-50 px-6 py-5 shadow-md dark:bg-gray-900/70 dark:shadow-gray-800/40">
-                    <h3 className="text-primary-500 font-bold uppercase">By Category</h3>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCategory(null)}
-                      className={`mt-2 px-3 py-1 text-sm font-semibold uppercase ${
-                        selectedCategory === null
-                          ? 'text-primary-500'
-                          : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
-                      }`}
-                    >
-                      All Posts
-                    </button>
-                    <ul className="mt-3">
-                      {categoryGroups.map((group, index) => (
-                        <li key={group.category} className="my-2">
-                          <details open={index === 0}>
-                            <summary
-                              onClick={() => setSelectedCategory(group.category)}
-                              className={`cursor-pointer list-none px-3 py-2 text-sm font-bold uppercase ${
-                                selectedCategory === group.category
-                                  ? 'text-primary-500'
-                                  : 'text-gray-700 dark:text-gray-300'
-                              }`}
-                            >
-                              <span className="hover:text-primary-500 dark:hover:text-primary-500 inline-flex items-center gap-1">
-                                <span>{formatCategoryLabel(group.category)}</span>
-                                <span className="text-xs font-medium">({group.posts.length})</span>
-                              </span>
-                            </summary>
-                            <ul className="mt-1 space-y-1">
-                              {group.posts.map((categoryPost) => {
-                                const isActive = pathname === `/${categoryPost.path}`
-                                return (
-                                  <li key={categoryPost.path}>
-                                    <Link
-                                      href={`/${categoryPost.path}`}
-                                      className={`hover:text-primary-500 dark:hover:text-primary-500 block rounded px-3 py-1.5 text-sm ${
-                                        isActive
-                                          ? 'text-primary-500 font-semibold'
-                                          : 'text-gray-500 dark:text-gray-300'
-                                      }`}
-                                    >
-                                      {categoryPost.title}
-                                    </Link>
-                                  </li>
-                                )
-                              })}
-                            </ul>
-                          </details>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-sm bg-gray-50 px-6 py-5 shadow-md dark:bg-gray-900/70 dark:shadow-gray-800/40">
-                    <h3 className="text-primary-500 font-bold uppercase">Tags</h3>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTagSlug(null)}
-                      className={`mt-2 px-3 py-1 text-sm font-semibold uppercase ${
-                        selectedTagSlug === null
-                          ? 'text-primary-500'
-                          : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-gray-100'
-                      }`}
-                    >
-                      All Tags
-                    </button>
-                    <label htmlFor="tag-search-input" className="sr-only">
-                      Search tags
-                    </label>
-                    <input
-                      id="tag-search-input"
-                      type="text"
-                      value={tagSearchKeyword}
-                      onChange={(event) => setTagSearchKeyword(event.target.value)}
-                      placeholder="Search tags..."
-                      className="focus:border-primary-500 mt-3 w-full rounded border border-gray-200 px-3 py-2 text-sm text-gray-700 focus:ring-0 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
-                    />
-                    <ul className="mt-3">
-                      {filteredTags.length === 0 && (
-                        <li className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
-                          No tags found.
-                        </li>
-                      )}
-                      {filteredTags.map((t) => {
-                        const tagSlug = slug(t)
-                        const isActiveTag = selectedTagSlug === tagSlug
+    <div className="space-y-5">
+      <header className="ledger-surface p-5 md:p-6">
+        <p className="ledger-kicker">Knowledge Index</p>
+        <h1 className="ledger-heading mt-2 text-3xl font-extrabold sm:text-4xl md:text-5xl">
+          {title}
+        </h1>
+        <p className="text-ledger-text-soft mt-3 max-w-3xl text-sm leading-7">
+          索引优先展示标题、时间、标签与分类结构，便于快速扫描和定位。
+        </p>
+      </header>
 
-                        return (
-                          <li key={t} className="my-2">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setSelectedTagSlug((current) =>
-                                  current === tagSlug ? null : tagSlug
-                                )
-                              }
-                              className={`px-3 py-2 text-sm font-medium uppercase ${
-                                isActiveTag
-                                  ? 'text-primary-500'
-                                  : 'hover:text-primary-500 dark:hover:text-primary-500 text-gray-500 dark:text-gray-300'
-                              }`}
-                              aria-label={`Filter posts by tag ${t}`}
-                            >
-                              {`${t} (${tagCounts[t]})`}
-                            </button>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                  </div>
-                </>
-              ) : (
-                <div className="rounded-sm bg-gray-50 px-6 py-5 shadow-md dark:bg-gray-900/70 dark:shadow-gray-800/40">
-                  <Link
-                    href={`/blog`}
-                    className="hover:text-primary-500 dark:hover:text-primary-500 font-bold text-gray-700 uppercase dark:text-gray-300"
+      <div className="ledger-grid-columns items-start gap-5">
+        <aside className="hidden space-y-4 md:col-span-4 md:block lg:col-span-3">
+          {isBlogRoute ? (
+            <>
+              <section className="ledger-surface sticky top-24 p-4">
+                <p className="ledger-kicker">Category</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory(null)}
+                    data-active={selectedCategory === null ? 'true' : 'false'}
+                    className="ledger-chip"
                   >
-                    All Posts
-                  </Link>
-                  <ul>
-                    {sortedTags.map((t) => {
-                      const tagSlug = slug(t)
-                      return (
-                        <li key={t} className="my-3">
-                          {selectedTagSlug === tagSlug ? (
-                            <h3 className="text-primary-500 inline px-3 py-2 text-sm font-bold uppercase">
-                              {`${t} (${tagCounts[t]})`}
-                            </h3>
-                          ) : (
-                            <Link
-                              href={`/blog?tag=${encodeURIComponent(tagSlug)}`}
-                              className="hover:text-primary-500 dark:hover:text-primary-500 px-3 py-2 text-sm font-medium text-gray-500 uppercase dark:text-gray-300"
-                              aria-label={`View posts tagged ${t}`}
-                            >
-                              {`${t} (${tagCounts[t]})`}
-                            </Link>
-                          )}
-                        </li>
-                      )
-                    })}
-                  </ul>
+                    All ({posts.length})
+                  </button>
+                  {categoryGroups.map((group) => (
+                    <button
+                      key={group.category}
+                      type="button"
+                      onClick={() =>
+                        setSelectedCategory((current) =>
+                          current === group.category ? null : group.category
+                        )
+                      }
+                      data-active={selectedCategory === group.category ? 'true' : 'false'}
+                      className="ledger-chip"
+                    >
+                      {formatCategoryLabel(group.category)} ({group.postCount})
+                    </button>
+                  ))}
                 </div>
-              )}
+              </section>
+
+              <section className="ledger-surface p-4">
+                <p className="ledger-kicker">Tags</p>
+                <label htmlFor="tag-search-input" className="sr-only">
+                  搜索标签
+                </label>
+                <input
+                  id="tag-search-input"
+                  type="text"
+                  value={tagSearchKeyword}
+                  onChange={(event) => setTagSearchKeyword(event.target.value)}
+                  placeholder="搜索标签"
+                  className="border-ledger-border bg-ledger-panel-muted text-ledger-text placeholder:text-ledger-muted mt-3 w-full rounded-lg border px-3 py-2 text-sm"
+                />
+                <div className="no-scrollbar mt-3 max-h-[17.5rem] space-y-2 overflow-y-auto pr-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTagSlug(null)}
+                    data-active={selectedTagSlug === null ? 'true' : 'false'}
+                    className="ledger-chip"
+                  >
+                    All Tags
+                  </button>
+                  {filteredTags.map((tag) => {
+                    const tagSlug = slug(tag)
+                    const isActiveTag = selectedTagSlug === tagSlug
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() =>
+                          setSelectedTagSlug((current) => (current === tagSlug ? null : tagSlug))
+                        }
+                        data-active={isActiveTag ? 'true' : 'false'}
+                        className="ledger-chip"
+                        aria-label={`按标签 ${tag} 过滤`}
+                      >
+                        {tag} ({tagCounts[tag]})
+                      </button>
+                    )
+                  })}
+                  {filteredTags.length === 0 && (
+                    <p className="text-ledger-muted text-sm">无匹配标签</p>
+                  )}
+                </div>
+              </section>
+            </>
+          ) : (
+            <section className="ledger-surface p-4">
+              <p className="ledger-kicker">Tags</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {sortedTags.map((tag) => {
+                  const tagSlug = slug(tag)
+                  const isActive = selectedTagSlug === tagSlug
+
+                  return (
+                    <Link
+                      key={tag}
+                      href={`/blog?tag=${encodeURIComponent(tagSlug)}`}
+                      data-active={isActive ? 'true' : 'false'}
+                      className="ledger-chip"
+                    >
+                      {tag} ({tagCounts[tag]})
+                    </Link>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+        </aside>
+
+        <section className="space-y-3 md:col-span-8 lg:col-span-9">
+          {filteredDisplayPosts.length === 0 && (
+            <div className="ledger-surface text-ledger-muted p-8 text-sm">
+              没有匹配的文章，请调整筛选条件。
             </div>
-          </div>
-          <div>
-            <ul>
-              {filteredDisplayPosts.map((post) => {
-                const { path, date, title, summary, tags } = post
-                return (
-                  <li key={path} className="py-5">
-                    <article className="flex flex-col space-y-2 xl:space-y-0">
-                      <dl>
-                        <dt className="sr-only">Published on</dt>
-                        <dd className="text-base leading-6 font-medium text-gray-500 dark:text-gray-400">
-                          <time dateTime={date} suppressHydrationWarning>
-                            {formatDate(date, siteMetadata.locale)}
-                          </time>
-                        </dd>
-                      </dl>
-                      <div className="space-y-3">
-                        <div>
-                          <h2 className="text-2xl leading-8 font-bold tracking-tight">
-                            <Link href={`/${path}`} className="text-gray-900 dark:text-gray-100">
-                              {title}
-                            </Link>
-                          </h2>
-                          <div className="flex flex-wrap">
-                            {tags?.map((tag) => (
-                              <Tag key={tag} text={tag} />
-                            ))}
-                          </div>
-                        </div>
-                        <div className="prose max-w-none text-gray-500 dark:text-gray-400">
-                          {summary}
-                        </div>
-                      </div>
-                    </article>
-                  </li>
-                )
-              })}
-            </ul>
-            {pagination && pagination.totalPages > 1 && !hasActiveFilters && (
-              <Pagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} />
-            )}
-          </div>
-        </div>
+          )}
+
+          <ul className="space-y-3">
+            {filteredDisplayPosts.map((post) => {
+              const { path, date, title: postTitle, summary, tags } = post
+
+              return (
+                <li key={path}>
+                  <article className="ledger-surface p-4 md:p-5">
+                    <div className="text-ledger-muted flex flex-wrap items-center gap-3 text-xs">
+                      <time dateTime={date} suppressHydrationWarning>
+                        {formatDate(date, siteMetadata.locale)}
+                      </time>
+                      <span className="font-mono tracking-[0.08em] uppercase">
+                        {getCategoryFromPath(path)}
+                      </span>
+                    </div>
+
+                    <h2 className="ledger-heading mt-2 text-2xl font-bold md:text-3xl">
+                      <Link href={`/${path}`} className="text-ledger-text hover:text-ledger-accent">
+                        {postTitle}
+                      </Link>
+                    </h2>
+
+                    <div className="mt-3 flex flex-wrap">
+                      {tags?.map((tag) => (
+                        <Tag key={tag} text={tag} />
+                      ))}
+                    </div>
+
+                    {summary && (
+                      <p className="text-ledger-text-soft mt-2 text-sm leading-7">{summary}</p>
+                    )}
+                  </article>
+                </li>
+              )
+            })}
+          </ul>
+
+          {pagination && pagination.totalPages > 1 && !hasActiveFilters && (
+            <Pagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} />
+          )}
+        </section>
       </div>
-    </>
+    </div>
   )
 }

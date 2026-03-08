@@ -3,19 +3,27 @@
 import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react'
 import { disableBodyScroll, enableBodyScroll, clearAllBodyScrollLocks } from 'body-scroll-lock'
 import { Fragment, useState, useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import Link from './Link'
 import headerNavLinks from '@/data/headerNavLinks'
+
+function isLinkActive(pathname: string, href: string) {
+  if (href === '/') {
+    return pathname === '/'
+  }
+  return pathname.startsWith(href)
+}
 
 const MobileNav = () => {
   const [navShow, setNavShow] = useState(false)
   const navRef = useRef(null)
+  const pathname = usePathname()
 
   const onToggleNav = () => {
     setNavShow((status) => {
       if (status) {
         enableBodyScroll(navRef.current)
       } else {
-        // Prevent scrolling
         disableBodyScroll(navRef.current)
       }
       return !status
@@ -28,75 +36,70 @@ const MobileNav = () => {
 
   return (
     <>
-      <button aria-label="Toggle Menu" onClick={onToggleNav} className="sm:hidden">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          className="hover:text-primary-500 dark:hover:text-primary-400 h-8 w-8 text-gray-900 dark:text-gray-100"
-        >
-          <path
-            fillRule="evenodd"
-            d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
-            clipRule="evenodd"
-          />
-        </svg>
+      <button
+        aria-label="打开导航"
+        onClick={onToggleNav}
+        className="ledger-btn ledger-btn-ghost text-ledger-text h-10 px-3 lg:hidden"
+      >
+        <span className="text-xs font-semibold tracking-[0.12em] uppercase">Menu</span>
       </button>
       <Transition appear show={navShow} as={Fragment} unmount={false}>
         <Dialog as="div" onClose={onToggleNav} unmount={false}>
           <TransitionChild
             as={Fragment}
-            enter="ease-out duration-300"
+            enter="ease-out duration-200"
             enterFrom="opacity-0"
             enterTo="opacity-100"
-            leave="ease-in duration-200"
+            leave="ease-in duration-150"
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
             unmount={false}
           >
-            <div className="fixed inset-0 z-60 bg-black/25" />
+            <div className="fixed inset-0 z-60 bg-black/45 backdrop-blur-[2px]" />
           </TransitionChild>
 
           <TransitionChild
             as={Fragment}
-            enter="transition ease-in-out duration-300 transform"
-            enterFrom="translate-x-full opacity-0"
-            enterTo="translate-x-0 opacity-95"
-            leave="transition ease-in duration-200 transform"
-            leaveFrom="translate-x-0 opacity-95"
-            leaveTo="translate-x-full opacity-0"
+            enter="transition ease-out duration-220 transform"
+            enterFrom="translate-y-4 opacity-0"
+            enterTo="translate-y-0 opacity-100"
+            leave="transition ease-in duration-170 transform"
+            leaveFrom="translate-y-0 opacity-100"
+            leaveTo="translate-y-4 opacity-0"
             unmount={false}
           >
-            <DialogPanel className="fixed top-0 left-0 z-70 h-full w-full bg-white/95 duration-300 dark:bg-gray-950/98">
-              <nav
-                ref={navRef}
-                className="mt-8 flex h-full basis-0 flex-col items-start overflow-y-auto pt-2 pl-12 text-left"
-              >
-                {headerNavLinks.map((link) => (
-                  <Link
-                    key={link.title}
-                    href={link.href}
-                    className="hover:text-primary-500 dark:hover:text-primary-400 mb-4 py-2 pr-4 text-2xl font-bold tracking-widest text-gray-900 outline outline-0 dark:text-gray-100"
-                    onClick={onToggleNav}
-                  >
-                    {link.title}
-                  </Link>
-                ))}
+            <DialogPanel className="border-ledger-border-strong bg-ledger-panel shadow-ledger-md fixed inset-x-4 top-4 z-70 max-h-[calc(100vh-2rem)] overflow-hidden rounded-2xl border p-4 backdrop-blur">
+              <div className="border-ledger-border mb-4 flex items-center justify-between border-b pb-3">
+                <p className="ledger-kicker">Command Palette</p>
+                <button
+                  className="ledger-btn ledger-btn-ghost h-9 px-3"
+                  aria-label="关闭导航"
+                  onClick={onToggleNav}
+                >
+                  Close
+                </button>
+              </div>
+              <nav ref={navRef} className="no-scrollbar max-h-[70vh] overflow-y-auto pr-1">
+                <ul className="space-y-2">
+                  {headerNavLinks.map((link) => {
+                    const active = isLinkActive(pathname, link.href)
+                    return (
+                      <li key={link.title}>
+                        <Link
+                          href={link.href}
+                          data-active={active ? 'true' : 'false'}
+                          className="ledger-chip w-full justify-between px-3 py-3 text-sm"
+                          onClick={onToggleNav}
+                          aria-current={active ? 'page' : undefined}
+                        >
+                          <span>{link.title}</span>
+                          <span className="opacity-70">{active ? 'active' : 'route'}</span>
+                        </Link>
+                      </li>
+                    )
+                  })}
+                </ul>
               </nav>
-
-              <button
-                className="hover:text-primary-500 dark:hover:text-primary-400 fixed top-7 right-4 z-80 h-16 w-16 p-4 text-gray-900 dark:text-gray-100"
-                aria-label="Toggle Menu"
-                onClick={onToggleNav}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </button>
             </DialogPanel>
           </TransitionChild>
         </Dialog>

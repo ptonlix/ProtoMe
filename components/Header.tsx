@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
 import Logo from '@/data/logo.svg'
@@ -6,45 +10,82 @@ import MobileNav from './MobileNav'
 import ThemeSwitch from './ThemeSwitch'
 import SearchButton from './SearchButton'
 
-const Header = () => {
-  let headerClass = 'flex items-center w-full bg-white dark:bg-gray-950 justify-between py-10'
-  if (siteMetadata.stickyNav) {
-    headerClass += ' sticky top-0 z-50'
+function isLinkActive(pathname: string, href: string) {
+  if (href === '/') {
+    return pathname === '/'
   }
+  return pathname.startsWith(href)
+}
+
+const Header = () => {
+  const pathname = usePathname()
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 12)
+    }
+
+    handleScroll()
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
 
   return (
-    <header className={headerClass}>
-      <Link href="/" aria-label={siteMetadata.headerTitle}>
-        <div className="flex items-center justify-between">
-          <div className="mr-3">
-            <Logo />
-          </div>
-          {typeof siteMetadata.headerTitle === 'string' ? (
-            <div className="hidden h-6 text-2xl font-semibold sm:block">
-              {siteMetadata.headerTitle}
+    <header className="sticky top-3 z-50 pb-4">
+      <div
+        className={`ledger-command-shell flex flex-wrap items-center justify-between gap-4 px-3 py-3 transition-all sm:px-4 ${
+          isScrolled ? 'border-ledger-border-strong shadow-ledger-md' : 'border-ledger-border'
+        }`}
+      >
+        <Link
+          href="/"
+          aria-label={siteMetadata.headerTitle}
+          className="min-w-0 flex-1 sm:flex-none"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="border-ledger-border bg-ledger-panel-muted text-ledger-text rounded-xl border p-2">
+              <Logo />
             </div>
-          ) : (
-            siteMetadata.headerTitle
-          )}
-        </div>
-      </Link>
-      <div className="flex items-center space-x-4 leading-5 sm:-mr-6 sm:space-x-6">
-        <div className="no-scrollbar hidden max-w-40 items-center gap-x-4 overflow-x-auto sm:flex md:max-w-72 lg:max-w-96">
-          {headerNavLinks
-            .filter((link) => link.href !== '/')
-            .map((link) => (
+            <div className="min-w-0">
+              <p className="ledger-kicker">Tech Ledger OS</p>
+              {typeof siteMetadata.headerTitle === 'string' ? (
+                <p className="ledger-heading truncate text-lg font-semibold">
+                  {siteMetadata.headerTitle}
+                </p>
+              ) : (
+                siteMetadata.headerTitle
+              )}
+            </div>
+          </div>
+        </Link>
+
+        <nav
+          className="no-scrollbar hidden max-w-full items-center gap-2 overflow-x-auto lg:flex"
+          aria-label="主导航"
+        >
+          {headerNavLinks.map((link) => {
+            const active = isLinkActive(pathname, link.href)
+            return (
               <Link
                 key={link.title}
                 href={link.href}
-                className="hover:text-primary-500 dark:hover:text-primary-400 m-1 font-medium text-gray-900 dark:text-gray-100"
+                data-active={active ? 'true' : 'false'}
+                className="ledger-chip"
+                aria-current={active ? 'page' : undefined}
               >
+                <span className="opacity-80">::</span>
                 {link.title}
               </Link>
-            ))}
+            )
+          })}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <SearchButton />
+          <ThemeSwitch />
+          <MobileNav />
         </div>
-        <SearchButton />
-        <ThemeSwitch />
-        <MobileNav />
       </div>
     </header>
   )

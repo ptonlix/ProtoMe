@@ -18,33 +18,12 @@ interface CardProps {
   demo?: string
 }
 
-const statusConfig: Record<
-  string,
-  {
-    label: string
-    className: string
-  }
-> = {
-  idea: {
-    label: '想法',
-    className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
-  },
-  active: {
-    label: '进行中',
-    className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  },
-  paused: {
-    label: '暂停',
-    className: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  },
-  completed: {
-    label: '已完成',
-    className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  },
-  archived: {
-    label: '归档',
-    className: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200',
-  },
+const statusConfig: Record<string, { label: string; className: string }> = {
+  idea: { label: '构思中', className: 'ledger-status ledger-status-idea' },
+  active: { label: '进行中', className: 'ledger-status ledger-status-active' },
+  paused: { label: '暂停', className: 'ledger-status ledger-status-paused' },
+  completed: { label: '完成', className: 'ledger-status ledger-status-completed' },
+  archived: { label: '归档', className: 'ledger-status ledger-status-archived' },
 }
 
 const Card = ({
@@ -67,91 +46,100 @@ const Card = ({
       ? { label: '详情', href: primaryLink }
       : null,
   ].filter((item): item is { label: string; href: string } => Boolean(item))
+
   const statusMeta = status ? statusConfig[status] : null
 
   return (
-    <div className="md max-w-[544px] p-4 md:w-1/2">
-      <div className="h-full overflow-hidden rounded-md border-2 border-gray-200/60 dark:border-gray-700/60">
-        {imgSrc &&
-          (primaryLink ? (
-            <Link href={primaryLink} aria-label={`Link to ${title}`}>
-              <Image
-                alt={title}
-                src={imgSrc}
-                className="object-cover object-center md:h-36 lg:h-48"
-                width={544}
-                height={306}
-              />
-            </Link>
-          ) : (
+    <article className="ledger-surface flex h-full flex-col overflow-hidden p-5">
+      {imgSrc &&
+        (primaryLink ? (
+          <Link
+            href={primaryLink}
+            aria-label={`Link to ${title}`}
+            className="mb-4 block overflow-hidden rounded-lg"
+          >
             <Image
               alt={title}
               src={imgSrc}
-              className="object-cover object-center md:h-36 lg:h-48"
+              className="h-44 w-full object-cover object-center"
               width={544}
               height={306}
             />
-          ))}
-        <div className="flex h-full flex-col p-6">
-          <h2 className="mb-3 text-2xl leading-8 font-bold tracking-tight">
-            {primaryLink ? (
-              <Link href={primaryLink} aria-label={`Link to ${title}`}>
-                {title}
-              </Link>
-            ) : (
-              title
-            )}
-          </h2>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            {status && (
-              <span
-                className={`rounded-md px-2 py-1 text-xs font-medium ${statusMeta?.className ?? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
-              >
-                {statusMeta?.label ?? status}
-              </span>
-            )}
-            {role && <span className="text-xs text-gray-500 dark:text-gray-400">角色：{role}</span>}
-            {updatedAt && (
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                更新：{formatDate(updatedAt, siteMetadata.locale)}
-              </span>
-            )}
+          </Link>
+        ) : (
+          <div className="mb-4 overflow-hidden rounded-lg">
+            <Image
+              alt={title}
+              src={imgSrc}
+              className="h-44 w-full object-cover object-center"
+              width={544}
+              height={306}
+            />
           </div>
-          <p className="prose mb-4 max-w-none text-gray-500 dark:text-gray-400">{description}</p>
-          {stack && stack.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {stack.slice(0, 6).map((tech) => (
-                <span
-                  key={`${title}-${tech}`}
-                  className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                >
-                  {tech}
-                </span>
-              ))}
-              {stack.length > 6 && (
-                <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                  +{stack.length - 6}
-                </span>
-              )}
-            </div>
-          )}
-          {actionLinks.length > 0 && (
-            <div className="mt-auto flex flex-wrap gap-4 text-sm leading-6 font-medium">
-              {actionLinks.map((link) => (
-                <Link
-                  key={`${title}-${link.label}-${link.href}`}
-                  href={link.href}
-                  className="text-primary-500 hover:text-primary-600 dark:hover:text-primary-400"
-                  aria-label={`${link.label}: ${title}`}
-                >
-                  {link.label} &rarr;
-                </Link>
-              ))}
-            </div>
+        ))}
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        {status && (
+          <span className={statusMeta?.className ?? 'ledger-status ledger-status-archived'}>
+            {statusMeta?.label ?? status}
+          </span>
+        )}
+        {role && <span className="ledger-chip text-[0.65rem]">角色 {role}</span>}
+        {updatedAt && (
+          <span className="text-ledger-muted text-xs">
+            更新 {formatDate(updatedAt, siteMetadata.locale)}
+          </span>
+        )}
+      </div>
+
+      <h3 className="ledger-heading text-2xl font-bold">
+        {primaryLink ? (
+          <Link
+            href={primaryLink}
+            aria-label={`Link to ${title}`}
+            className="text-ledger-text hover:text-ledger-accent"
+          >
+            {title}
+          </Link>
+        ) : (
+          title
+        )}
+      </h3>
+
+      <p className="text-ledger-text-soft mt-3 text-sm leading-6">{description}</p>
+
+      {stack && stack.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {stack.slice(0, 8).map((tech) => (
+            <span
+              key={`${title}-${tech}`}
+              className="ledger-chip text-[0.64rem]"
+              data-active="false"
+            >
+              {tech}
+            </span>
+          ))}
+          {stack.length > 8 && (
+            <span className="ledger-chip text-[0.64rem]">+{stack.length - 8}</span>
           )}
         </div>
-      </div>
-    </div>
+      )}
+
+      {actionLinks.length > 0 && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {actionLinks.map((link, index) => (
+            <Link
+              key={`${title}-${link.label}-${link.href}`}
+              href={link.href}
+              className={`ledger-btn ${index === 0 ? 'ledger-btn-primary' : 'ledger-btn-secondary'} text-xs`}
+              aria-label={`${link.label}: ${title}`}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </article>
   )
 }
 

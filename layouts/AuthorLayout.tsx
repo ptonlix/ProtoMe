@@ -12,40 +12,57 @@ export default function AuthorLayout({ children, content }: Props) {
   const { name, avatar, occupation, company, email, twitter, bluesky, linkedin, github } = content
 
   return (
-    <>
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        <div className="space-y-2 pt-6 pb-8 md:space-y-5">
-          <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
-            About
-          </h1>
-        </div>
-        <div className="items-start space-y-2 xl:grid xl:grid-cols-3 xl:space-y-0 xl:gap-x-8">
-          <div className="flex flex-col items-center space-x-2 pt-8">
+    <div className="space-y-6">
+      <header className="ledger-surface p-5 md:p-6">
+        <p className="ledger-kicker">Methodology Archive</p>
+        <h1 className="ledger-heading mt-2 text-3xl font-extrabold sm:text-4xl md:text-5xl">
+          About
+        </h1>
+        <p className="text-ledger-text-soft mt-3 max-w-3xl text-sm leading-7">
+          记录长期方法论、协作习惯与技术实践，作为个人工程系统说明书。
+        </p>
+      </header>
+
+      <section className="ledger-grid-columns gap-4">
+        <aside className="ledger-surface p-5 md:col-span-4">
+          <div className="flex flex-col items-center text-center">
             {avatar && (
               <Image
                 src={avatar}
                 alt="avatar"
                 width={192}
                 height={192}
-                className="h-48 w-48 rounded-full"
+                className="border-ledger-border h-32 w-32 rounded-2xl border object-cover"
               />
             )}
-            <h3 className="pt-4 pb-2 text-2xl leading-8 font-bold tracking-tight">{name}</h3>
-            <div className="text-gray-500 dark:text-gray-400">{occupation}</div>
-            <div className="text-gray-500 dark:text-gray-400">{company}</div>
-            <div className="flex space-x-3 pt-6">
-              <SocialIcon kind="mail" href={`mailto:${email}`} />
-              <SocialIcon kind="github" href={github} />
-              <SocialIcon kind="linkedin" href={linkedin} />
-              <SocialIcon kind="x" href={twitter} />
-              <SocialIcon kind="bluesky" href={bluesky} />
+            <h2 className="ledger-heading mt-4 text-2xl font-bold">{name}</h2>
+            <p className="text-ledger-text-soft mt-1 text-sm">{occupation}</p>
+            <p className="text-ledger-muted text-sm">{company}</p>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <span className="ledger-chip px-2 py-1">
+                <SocialIcon kind="mail" href={email ? `mailto:${email}` : undefined} size={4} />
+              </span>
+              <span className="ledger-chip px-2 py-1">
+                <SocialIcon kind="github" href={github} size={4} />
+              </span>
+              <span className="ledger-chip px-2 py-1">
+                <SocialIcon kind="linkedin" href={linkedin} size={4} />
+              </span>
+              <span className="ledger-chip px-2 py-1">
+                <SocialIcon kind="x" href={twitter} size={4} />
+              </span>
+              <span className="ledger-chip px-2 py-1">
+                <SocialIcon kind="bluesky" href={bluesky} size={4} />
+              </span>
             </div>
           </div>
-          <div className="prose dark:prose-invert max-w-none pt-8 pb-8 xl:col-span-2">
-            {children}
-          </div>
-        </div>
-      </div>
-    </>
+        </aside>
+
+        <article className="ledger-surface prose dark:prose-invert max-w-none p-5 md:col-span-8 md:p-6">
+          {children}
+        </article>
+      </section>
+    </div>
   )
 }

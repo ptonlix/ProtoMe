@@ -9,41 +9,50 @@ export default function Projects() {
     .filter((item) => item.privacy === 'public')
     .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
+  const activeCount = projects.filter((item) => item.status === 'active').length
+  const archivedCount = projects.filter((item) => item.status === 'archived').length
+
   return (
-    <>
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        <div className="space-y-2 pt-6 pb-8 md:space-y-5">
-          <h1 className="text-3xl leading-9 font-extrabold tracking-tight text-gray-900 sm:text-4xl sm:leading-10 md:text-6xl md:leading-14 dark:text-gray-100">
-            Projects
-          </h1>
-          <p className="text-lg leading-7 text-gray-500 dark:text-gray-400">
-            按更新时间展示公开项目，支持从结构化数据持续沉淀个人项目资产。
-          </p>
+    <div className="space-y-6">
+      <header className="ledger-surface p-5 md:p-6">
+        <p className="ledger-kicker">Project Repository</p>
+        <h1 className="ledger-heading mt-2 text-3xl font-extrabold sm:text-4xl md:text-5xl">
+          Projects
+        </h1>
+        <p className="text-ledger-text-soft mt-3 max-w-3xl text-sm leading-7">
+          统一展示公开项目状态、更新时间与技术栈，便于快速扫描与长期维护。
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="ledger-chip" data-active="true">
+            总计 {projects.length}
+          </span>
+          <span className="ledger-chip">进行中 {activeCount}</span>
+          <span className="ledger-chip">归档 {archivedCount}</span>
         </div>
-        <div className="container py-12">
-          <div className="-m-4 flex flex-wrap">
-            {projects.map((d) => (
-              <Card
-                key={d.id}
-                title={d.title}
-                description={d.summary ?? '暂无项目摘要。'}
-                href={d.demo || d.repo}
-                status={d.status}
-                role={d.role}
-                updatedAt={d.updatedAt}
-                stack={d.stack}
-                repo={d.repo}
-                demo={d.demo}
-              />
-            ))}
-          </div>
-          {projects.length === 0 && (
-            <p className="px-4 text-gray-500 dark:text-gray-400">
-              暂无公开项目，请在 `data/projects/**/*.mdx` 中新增或将 `privacy` 设置为 `public`。
-            </p>
-          )}
+      </header>
+
+      <section className="grid gap-4 md:grid-cols-2">
+        {projects.map((project) => (
+          <Card
+            key={project.id}
+            title={project.title}
+            description={project.summary ?? '暂无项目摘要。'}
+            href={project.demo || project.repo}
+            status={project.status}
+            role={project.role}
+            updatedAt={project.updatedAt}
+            stack={project.stack}
+            repo={project.repo}
+            demo={project.demo}
+          />
+        ))}
+      </section>
+
+      {projects.length === 0 && (
+        <div className="ledger-surface text-ledger-muted p-4 text-sm">
+          暂无公开项目，请在 data/projects/**/*.mdx 中新增或将 privacy 设置为 public。
         </div>
-      </div>
-    </>
+      )}
+    </div>
   )
 }

@@ -2,6 +2,7 @@ import ListLayout from '@/layouts/ListLayoutWithTags'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer'
 import { allBlogs } from 'contentlayer/generated'
 import { notFound } from 'next/navigation'
+import { Suspense } from 'react'
 
 const POSTS_PER_PAGE = 5
 
@@ -32,11 +33,17 @@ export default async function Page(props: { params: Promise<{ page: string }> })
   }
 
   return (
-    <ListLayout
-      posts={posts}
-      initialDisplayPosts={initialDisplayPosts}
-      pagination={pagination}
-      title="All Posts"
-    />
+    <Suspense
+      fallback={
+        <div className="ledger-surface text-ledger-muted p-4 text-sm">加载 Blog 索引中...</div>
+      }
+    >
+      <ListLayout
+        posts={posts}
+        initialDisplayPosts={initialDisplayPosts}
+        pagination={pagination}
+        title="Blog Index"
+      />
+    </Suspense>
   )
 }
