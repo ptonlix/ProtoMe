@@ -10,8 +10,12 @@ interface Props {
 
 export default function AuthorLayout({ children, content }: Props) {
   const { name, avatar, occupation, company, email, twitter, bluesky, linkedin, github } = content
+  const mailHref =
+    email && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)
+      ? `mailto:${email}`
+      : undefined
   const socialLinks = [
-    { kind: 'mail', href: email ? `mailto:${email}` : undefined },
+    { kind: 'mail', href: mailHref },
     { kind: 'github', href: github },
     { kind: 'linkedin', href: linkedin },
     { kind: 'x', href: twitter },
@@ -26,7 +30,7 @@ export default function AuthorLayout({ children, content }: Props) {
           About
         </h1>
         <p className="text-ledger-text-soft mt-3 max-w-3xl text-sm leading-7">
-          记录个人长期方法论、协作习惯与技术实践
+          记录关于我的技术与产品之路
         </p>
       </header>
 

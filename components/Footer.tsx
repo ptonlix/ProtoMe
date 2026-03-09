@@ -36,9 +36,14 @@ export default function Footer() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="ledger-kicker">System Tailnote</p>
-            <p className="text-ledger-text-soft mt-1 text-sm">
-              {siteMetadata.author} · © {new Date().getFullYear()} · {siteMetadata.title}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-ledger-text-soft text-sm">
+                {siteMetadata.author} · © {new Date().getFullYear()} · {siteMetadata.title}
+              </p>
+              <p className="text-ledger-muted font-mono text-xs tracking-[0.08em] uppercase">
+                {version}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {socialLinks.map((kind) => (
@@ -47,16 +52,6 @@ export default function Footer() {
               </span>
             ))}
           </div>
-        </div>
-
-        <div className="border-ledger-border text-ledger-muted mt-4 flex flex-wrap items-center justify-between gap-3 border-t pt-3 text-xs">
-          <p className="font-mono tracking-[0.08em] uppercase">Runtime {version}</p>
-          <Link
-            href="https://github.com/timlrx/tailwind-nextjs-starter-blog"
-            className="ledger-btn ledger-btn-ghost px-2 py-1 text-xs"
-          >
-            基于 Tailwind Nextjs Theme
-          </Link>
         </div>
       </div>
     </footer>

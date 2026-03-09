@@ -372,7 +372,7 @@ export default function Home({ posts, profile, projects, worklogs }) {
 
       <section className="ledger-surface p-5">
         <div className="mb-4 flex items-center justify-between gap-4">
-          <h2 className="ledger-divider-title">项目管线</h2>
+          <h2 className="ledger-divider-title">项目介绍</h2>
           <Link href="/projects" className="ledger-btn ledger-btn-ghost text-xs">
             查看全部
           </Link>
