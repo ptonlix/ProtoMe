@@ -48,7 +48,7 @@ const Header = () => {
               <Logo />
             </div>
             <div className="min-w-0">
-              <p className="ledger-kicker">Tech Ledger OS</p>
+              <p className="ledger-kicker">ProtoMe</p>
               {typeof siteMetadata.headerTitle === 'string' ? (
                 <p className="ledger-heading truncate text-lg font-semibold">
                   {siteMetadata.headerTitle}

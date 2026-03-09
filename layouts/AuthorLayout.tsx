@@ -10,16 +10,23 @@ interface Props {
 
 export default function AuthorLayout({ children, content }: Props) {
   const { name, avatar, occupation, company, email, twitter, bluesky, linkedin, github } = content
+  const socialLinks = [
+    { kind: 'mail', href: email ? `mailto:${email}` : undefined },
+    { kind: 'github', href: github },
+    { kind: 'linkedin', href: linkedin },
+    { kind: 'x', href: twitter },
+    { kind: 'bluesky', href: bluesky },
+  ].filter((item) => Boolean(item.href))
 
   return (
     <div className="space-y-6">
       <header className="ledger-surface p-5 md:p-6">
-        <p className="ledger-kicker">Methodology Archive</p>
+        <p className="ledger-kicker">Personal Profile</p>
         <h1 className="ledger-heading mt-2 text-3xl font-extrabold sm:text-4xl md:text-5xl">
           About
         </h1>
         <p className="text-ledger-text-soft mt-3 max-w-3xl text-sm leading-7">
-          记录长期方法论、协作习惯与技术实践，作为个人工程系统说明书。
+          记录个人长期方法论、协作习惯与技术实践
         </p>
       </header>
 
@@ -39,23 +46,15 @@ export default function AuthorLayout({ children, content }: Props) {
             <p className="text-ledger-text-soft mt-1 text-sm">{occupation}</p>
             <p className="text-ledger-muted text-sm">{company}</p>
 
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <span className="ledger-chip px-2 py-1">
-                <SocialIcon kind="mail" href={email ? `mailto:${email}` : undefined} size={4} />
-              </span>
-              <span className="ledger-chip px-2 py-1">
-                <SocialIcon kind="github" href={github} size={4} />
-              </span>
-              <span className="ledger-chip px-2 py-1">
-                <SocialIcon kind="linkedin" href={linkedin} size={4} />
-              </span>
-              <span className="ledger-chip px-2 py-1">
-                <SocialIcon kind="x" href={twitter} size={4} />
-              </span>
-              <span className="ledger-chip px-2 py-1">
-                <SocialIcon kind="bluesky" href={bluesky} size={4} />
-              </span>
-            </div>
+            {socialLinks.length > 0 && (
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                {socialLinks.map((item) => (
+                  <span key={item.kind} className="ledger-chip px-2 py-1">
+                    <SocialIcon kind={item.kind} href={item.href} size={4} />
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </aside>
 
