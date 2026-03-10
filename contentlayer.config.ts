@@ -178,11 +178,28 @@ export const Profile = defineDocumentType(() => ({
     name: { type: 'string', required: true },
     headline: { type: 'string', required: true },
     updatedAt: { type: 'date', required: true },
+    company: { type: 'string' },
     email: { type: 'string' },
     location: { type: 'string' },
     website: { type: 'string' },
+    twitter: { type: 'string' },
+    linkedin: { type: 'string' },
+    github: { type: 'string' },
     skills: { type: 'list', of: { type: 'string' }, default: [] },
     highlights: { type: 'list', of: { type: 'string' }, default: [] },
+    privacy: { type: 'enum', options: privacyOptions, default: 'public' },
+  },
+  computedFields,
+}))
+
+export const About = defineDocumentType(() => ({
+  name: 'About',
+  filePathPattern: 'about/**/*.mdx',
+  contentType: 'mdx',
+  fields: {
+    title: { type: 'string', required: true },
+    summary: { type: 'string' },
+    updatedAt: { type: 'date', required: true },
     privacy: { type: 'enum', options: privacyOptions, default: 'public' },
   },
   computedFields,
@@ -231,7 +248,7 @@ export const Worklog = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'data',
-  documentTypes: [Blog, Authors, Profile, Project, Worklog],
+  documentTypes: [Blog, Authors, Profile, About, Project, Worklog],
   mdx: {
     cwd: process.cwd(),
     remarkPlugins: [
