@@ -3,6 +3,7 @@ import { MDXLayoutRenderer } from 'pliny/mdx-components'
 import { formatDate } from 'pliny/utils/formatDate'
 import siteMetadata from '@/data/siteMetadata'
 import { genPageMetadata } from 'app/seo'
+import { components } from '@/components/MDXComponents'
 import Link from '@/components/Link'
 import SocialIcon from '@/components/social-icons'
 import Image from '@/components/Image'
@@ -179,7 +180,7 @@ export default function ProfilePage() {
       </header>
 
       <article className="ledger-surface prose dark:prose-invert max-w-none p-5 md:p-6">
-        <MDXLayoutRenderer code={profile.body.code} />
+        <MDXLayoutRenderer code={profile.body.code} components={components} />
       </article>
     </div>
   )

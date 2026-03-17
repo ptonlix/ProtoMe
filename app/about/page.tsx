@@ -3,6 +3,7 @@ import { MDXLayoutRenderer } from 'pliny/mdx-components'
 import { formatDate } from 'pliny/utils/formatDate'
 import siteMetadata from '@/data/siteMetadata'
 import { genPageMetadata } from 'app/seo'
+import { components } from '@/components/MDXComponents'
 
 export const metadata = genPageMetadata({ title: 'About' })
 
@@ -36,7 +37,7 @@ export default function AboutPage() {
       </header>
 
       <article className="ledger-surface prose dark:prose-invert max-w-none p-5 md:p-6">
-        <MDXLayoutRenderer code={about.body.code} />
+        <MDXLayoutRenderer code={about.body.code} components={components} />
       </article>
     </div>
   )
