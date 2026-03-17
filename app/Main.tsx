@@ -134,6 +134,20 @@ export default function Home({ posts, profile, projects, worklogs }) {
               {heroHeadline}
             </p>
 
+            {heroHighlights.length > 0 ? (
+              <div className="ledger-surface-muted max-w-2xl p-4">
+                <p className="ledger-kicker">Identity Notes</p>
+                <ul className="text-ledger-text-soft mt-3 space-y-2 text-sm leading-7">
+                  {heroHighlights.slice(0, 3).map((item) => (
+                    <li key={item} className="flex gap-2">
+                      <span className="bg-ledger-accent mt-2 h-1.5 w-1.5 rounded-full" />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
             <div className="text-ledger-muted flex flex-wrap items-center gap-2 text-sm">
               {heroLocation && <span>{heroLocation}</span>}
               {heroLocation && heroEmail && <span>·</span>}
@@ -144,6 +158,14 @@ export default function Home({ posts, profile, projects, worklogs }) {
                   {heroWebsite.replace(/^https?:\/\//, '')}
                 </Link>
               )}
+              {(heroLocation || heroEmail || heroWebsite) && contactLinks.length > 0 && (
+                <span>·</span>
+              )}
+              {contactLinks.map((item) => (
+                <span key={item.kind} className="ledger-chip px-2 py-1">
+                  <SocialIcon kind={item.kind} href={item.href} size={4} />
+                </span>
+              ))}
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
@@ -153,7 +175,7 @@ export default function Home({ posts, profile, projects, worklogs }) {
               <Link href="/profile" className="ledger-btn ledger-btn-secondary">
                 打开个人档案
               </Link>
-              <Link href="/worklogs" className="ledger-btn ledger-btn-ghost">
+              <Link href="/worklogs" className="ledger-btn ledger-btn-secondary">
                 浏览最新纪要
               </Link>
             </div>
@@ -176,7 +198,7 @@ export default function Home({ posts, profile, projects, worklogs }) {
               </div>
             </div>
 
-            <div className="ledger-surface-muted p-4">
+            <div className="ledger-surface-muted min-h-[220px] p-4">
               <p className="ledger-kicker">Current Focus</p>
               {latestWorklog ? (
                 <div className="mt-3 space-y-2">
@@ -204,82 +226,6 @@ export default function Home({ posts, profile, projects, worklogs }) {
             <span className="ledger-metric-value text-2xl">{item.value}</span>
           </Link>
         ))}
-      </section>
-
-      <section className="ledger-grid-columns gap-4">
-        <article className="ledger-surface space-y-4 p-5 md:col-span-7">
-          <h2 className="ledger-divider-title">关于我</h2>
-          {heroHighlights.length > 0 ? (
-            <ul className="text-ledger-text-soft space-y-2 text-sm leading-7">
-              {heroHighlights.map((item) => (
-                <li key={item} className="flex gap-2">
-                  <span className="bg-ledger-accent mt-2 h-1.5 w-1.5 rounded-full" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-ledger-muted text-sm">
-              暂无简介，可在 data/profile/default.mdx 中补充 highlights。
-            </p>
-          )}
-
-          <div className="pt-2">
-            <p className="ledger-kicker">Contact Channel</p>
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {mailHref && (
-                <Link href={mailHref} className="ledger-btn ledger-btn-primary text-xs">
-                  发送邮件
-                </Link>
-              )}
-              <Link href="/about" className="ledger-btn ledger-btn-secondary text-xs">
-                查看 About
-              </Link>
-              {contactLinks.map((item) => (
-                <span key={item.kind} className="ledger-chip px-2 py-1">
-                  <SocialIcon kind={item.kind} href={item.href} size={4} />
-                </span>
-              ))}
-            </div>
-          </div>
-        </article>
-
-        <article className="ledger-surface space-y-4 p-5 md:col-span-5">
-          <h2 className="ledger-divider-title">运行看板</h2>
-          {latestWorklog ? (
-            <div className="space-y-4">
-              {latestWorklog.focus?.length > 0 && (
-                <div>
-                  <p className="ledger-kicker">当前重点</p>
-                  <ul className="text-ledger-text-soft mt-2 space-y-1 text-sm">
-                    {latestWorklog.focus.map((item) => (
-                      <li key={item} className="flex gap-2">
-                        <span className="bg-ledger-accent mt-2 h-1 w-1 rounded-full" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {latestWorklog.nextActions?.length > 0 && (
-                <div>
-                  <p className="ledger-kicker">下一步动作</p>
-                  <ul className="text-ledger-text-soft mt-2 space-y-1 text-sm">
-                    {latestWorklog.nextActions.map((item) => (
-                      <li key={item} className="flex gap-2">
-                        <span className="bg-ledger-success mt-2 h-1 w-1 rounded-full" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-ledger-muted text-sm">暂无公开工作纪要。</p>
-          )}
-        </article>
       </section>
 
       <section className="ledger-surface p-5">
