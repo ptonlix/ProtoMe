@@ -176,6 +176,7 @@ export const Profile = defineDocumentType(() => ({
   contentType: 'mdx',
   fields: {
     name: { type: 'string', required: true },
+    avatar: { type: 'string' },
     headline: { type: 'string', required: true },
     updatedAt: { type: 'date', required: true },
     company: { type: 'string' },
