@@ -11,6 +11,8 @@
 # next.js
 /.next/
 /out/
+/src/.next/
+/src/out/
 public/sitemap.xml
 .vercel
 
@@ -40,6 +42,18 @@ pnpm-debug.log*
 
 # Contentlayer
 .contentlayer
+/src/.contentlayer
+
+# 文件型后台内容
+/data/blog/**
+/public/static/images/posts/**
+/public/feed.xml
+/public/search.json
+/public/tags/**
+
+# API 构建产物
+/src-api/dist
+/src-api/node_modules
 
 
 # AI Coding

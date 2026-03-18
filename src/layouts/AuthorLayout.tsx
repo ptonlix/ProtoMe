@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { ComponentProps, ReactNode } from 'react'
 import type { Authors } from 'contentlayer/generated'
 import SocialIcon from '@/components/social-icons'
 import Image from '@/components/Image'
@@ -20,7 +20,9 @@ export default function AuthorLayout({ children, content }: Props) {
     { kind: 'linkedin', href: linkedin },
     { kind: 'x', href: twitter },
     { kind: 'bluesky', href: bluesky },
-  ].filter((item) => Boolean(item.href))
+  ].filter((item): item is { kind: ComponentProps<typeof SocialIcon>['kind']; href: string } =>
+    Boolean(item.href)
+  )
 
   return (
     <div className="space-y-6">
