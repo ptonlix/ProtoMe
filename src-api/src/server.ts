@@ -171,8 +171,17 @@ app.post('/api/admin/post/publish', async (req, res) => {
     })
 
     let stderr = ''
+    let stdout = ''
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString()
+      stdout += text
+      process.stdout.write(`[publish] ${text}`)
+    })
+
     child.stderr.on('data', (chunk) => {
-      stderr += chunk.toString()
+      const text = chunk.toString()
+      stderr += text
+      process.stderr.write(`[publish] ${text}`)
     })
 
     child.on('exit', (code) => {
@@ -184,7 +193,7 @@ app.post('/api/admin/post/publish', async (req, res) => {
       }
 
       publishState.status = 'failed'
-      publishState.message = stderr.trim() || '发布失败'
+      publishState.message = stderr.trim() || stdout.trim() || '发布失败'
     })
 
     res.status(202).json({

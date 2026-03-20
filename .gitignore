@@ -13,6 +13,7 @@
 /out/
 /src/.next/
 /src/out/
+/src/.next-prod/
 public/sitemap.xml
 .vercel
 
