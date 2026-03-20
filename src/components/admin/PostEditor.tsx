@@ -164,7 +164,13 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
       try {
         setError('')
         setInfo('')
-        const payload = toPayload(formState)
+        const nextFormState = publishAfterSave
+          ? {
+              ...formState,
+              draft: false,
+            }
+          : formState
+        const payload = toPayload(nextFormState)
         const response = resolvedPath
           ? await updatePost(adminKey, resolvedPath, payload)
           : await createPost(adminKey, payload)
