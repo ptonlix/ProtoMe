@@ -7,6 +7,7 @@ import { blogRoot, postsImageRoot } from './config.js'
 
 const frontmatterSchema = z.object({
   title: z.string().trim().min(1, '标题不能为空'),
+  category: z.string().trim().min(1, '分类目录不能为空'),
   date: z.string().trim().min(1, '发布日期不能为空'),
   summary: z.string().trim().min(1, '摘要不能为空'),
   tags: z.array(z.string().trim().min(1)).default([]),
@@ -24,6 +25,7 @@ export type PostInput = z.infer<typeof frontmatterSchema>
 
 export type PostRecord = {
   adminPath: string
+  category: string
   filePath: string
   title: string
   date: string
@@ -54,7 +56,18 @@ export function normalizeSlug(input: string) {
 }
 
 export function normalizeAdminPath(adminPath: string) {
-  const cleaned = adminPath.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')
+  const cleaned = adminPath
+    .split('/')
+    .map((segment) => {
+      try {
+        return decodeURIComponent(segment)
+      } catch {
+        throw new Error('文章路径包含非法编码')
+      }
+    })
+    .join('/')
+    .replace(/\\/g, '/')
+    .replace(/^\/+|\/+$/g, '')
   assertSafePathSegment(cleaned, '文章路径')
   return cleaned
 }
@@ -62,6 +75,11 @@ export function normalizeAdminPath(adminPath: string) {
 export function filePathFromAdminPath(adminPath: string) {
   const normalizedPath = normalizeAdminPath(adminPath)
   return path.join(blogRoot, `${normalizedPath}.mdx`)
+}
+
+export function categoryFromAdminPath(adminPath: string) {
+  const normalizedPath = normalizeAdminPath(adminPath)
+  return normalizedPath.split('/').slice(0, -1).join('/') || 'default'
 }
 
 export function imageDirFromPost(input: { date: string; slug: string }) {
@@ -90,6 +108,7 @@ function toPostRecord(adminPath: string, source: string): PostRecord {
   const parsed = matter(source)
   const data = frontmatterSchema.parse({
     title: parsed.data.title,
+    category: categoryFromAdminPath(adminPath),
     date: parsed.data.date ? String(parsed.data.date) : '',
     summary: parsed.data.summary ?? '',
     tags: Array.isArray(parsed.data.tags) ? parsed.data.tags : [],
@@ -104,6 +123,7 @@ function toPostRecord(adminPath: string, source: string): PostRecord {
 
   return {
     adminPath,
+    category: categoryFromAdminPath(adminPath),
     filePath: `${adminPath}.mdx`,
     title: data.title,
     date: normalizeDateString(data.date),
@@ -151,6 +171,14 @@ export async function listPosts() {
   })
 }
 
+export async function listCategories() {
+  const entries = await fs.readdir(blogRoot, { withFileTypes: true })
+  return entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort((left, right) => left.localeCompare(right, 'zh-CN'))
+}
+
 export async function readPost(adminPath: string) {
   const filePath = filePathFromAdminPath(adminPath)
   const source = await fs.readFile(filePath, 'utf8')
@@ -166,6 +194,7 @@ export function validatePostInput(input: unknown) {
 
   return {
     ...parsed,
+    category: normalizeAdminPath(parsed.category),
     slug: normalizedSlug,
     tags: cleanArray(parsed.tags),
     authors: cleanArray(parsed.authors.length > 0 ? parsed.authors : ['default']),
@@ -200,8 +229,7 @@ function stringifyPost(input: ReturnType<typeof validatePostInput>) {
 
 export async function createPost(input: unknown) {
   const validated = validatePostInput(input)
-  const year = String(new Date(validated.date).getFullYear())
-  const adminPath = `${year}/${validated.slug}`
+  const adminPath = `${validated.category}/${validated.slug}`
   const filePath = filePathFromAdminPath(adminPath)
 
   await fs.mkdir(path.dirname(filePath), { recursive: true })

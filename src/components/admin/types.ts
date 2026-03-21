@@ -1,5 +1,6 @@
 export type AdminPost = {
   adminPath: string
+  category: string
   filePath: string
   title: string
   date: string

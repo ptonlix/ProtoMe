@@ -33,6 +33,10 @@ export async function fetchPosts(adminKey: string) {
   return request<{ posts: AdminPost[] }>('/api/admin/posts', { adminKey })
 }
 
+export async function fetchCategories(adminKey: string) {
+  return request<{ categories: string[] }>('/api/admin/categories', { adminKey })
+}
+
 export async function fetchPost(adminKey: string, adminPath: string) {
   const query = new URLSearchParams({ path: adminPath })
   return request<{ post: AdminPost }>(`/api/admin/post?${query.toString()}`, { adminKey })

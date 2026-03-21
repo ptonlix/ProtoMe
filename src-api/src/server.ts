@@ -8,6 +8,7 @@ import { adminOrigin, maxUploadSize, port, resolveAdminKey, workspaceRoot } from
 import {
   createPost,
   imageDirFromPost,
+  listCategories,
   listPosts,
   normalizeAdminPath,
   normalizeSlug,
@@ -72,6 +73,15 @@ app.get('/api/admin/posts', async (_req, res) => {
     res.json({ posts })
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : '文章列表读取失败' })
+  }
+})
+
+app.get('/api/admin/categories', async (_req, res) => {
+  try {
+    const categories = await listCategories()
+    res.json({ categories })
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : '分类目录读取失败' })
   }
 })
 
