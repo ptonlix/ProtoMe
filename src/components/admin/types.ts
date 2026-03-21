@@ -23,3 +23,11 @@ export type PublishState = {
   startedAt: string | null
   finishedAt: string | null
 }
+
+export type AdminPostsListResponse = {
+  items: AdminPost[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}

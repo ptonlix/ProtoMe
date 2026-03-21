@@ -1,6 +1,6 @@
 'use client'
 
-import type { AdminPost, PublishState } from './types'
+import type { AdminPost, AdminPostsListResponse, PublishState } from './types'
 
 const adminApiBaseUrl =
   process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:4100'
@@ -29,8 +29,34 @@ async function request<T>(pathname: string, options: RequestOptions): Promise<T>
   return payload as T
 }
 
-export async function fetchPosts(adminKey: string) {
-  return request<{ posts: AdminPost[] }>('/api/admin/posts', { adminKey })
+export async function fetchPosts(
+  adminKey: string,
+  query?: {
+    category?: string
+    keyword?: string
+    status?: 'draft' | 'published'
+    page?: number
+    pageSize?: number
+  }
+) {
+  const params = new URLSearchParams()
+  if (query?.category) {
+    params.set('category', query.category)
+  }
+  if (query?.keyword) {
+    params.set('keyword', query.keyword)
+  }
+  if (query?.status) {
+    params.set('status', query.status)
+  }
+  if (query?.page) {
+    params.set('page', String(query.page))
+  }
+  if (query?.pageSize) {
+    params.set('pageSize', String(query.pageSize))
+  }
+  const pathname = params.size > 0 ? `/api/admin/posts?${params.toString()}` : '/api/admin/posts'
+  return request<AdminPostsListResponse>(pathname, { adminKey })
 }
 
 export async function fetchCategories(adminKey: string) {

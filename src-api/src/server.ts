@@ -67,10 +67,25 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/admin', requireAdmin)
 
-app.get('/api/admin/posts', async (_req, res) => {
+app.get('/api/admin/posts', async (req, res) => {
   try {
-    const posts = await listPosts()
-    res.json({ posts })
+    const rawCategory = typeof req.query.category === 'string' ? req.query.category : undefined
+    const rawKeyword = typeof req.query.keyword === 'string' ? req.query.keyword : undefined
+    const rawStatus =
+      req.query.status === 'draft' || req.query.status === 'published'
+        ? req.query.status
+        : undefined
+    const rawPage = typeof req.query.page === 'string' ? Number.parseInt(req.query.page, 10) : 1
+    const rawPageSize =
+      typeof req.query.pageSize === 'string' ? Number.parseInt(req.query.pageSize, 10) : 12
+    const result = await listPosts({
+      category: rawCategory,
+      keyword: rawKeyword,
+      status: rawStatus,
+      page: Number.isNaN(rawPage) ? 1 : rawPage,
+      pageSize: Number.isNaN(rawPageSize) ? 12 : rawPageSize,
+    })
+    res.json(result)
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : '文章列表读取失败' })
   }

@@ -41,6 +41,22 @@ export type PostRecord = {
   lastmod?: string
 }
 
+type ListPostsOptions = {
+  category?: string
+  keyword?: string
+  status?: 'draft' | 'published'
+  page?: number
+  pageSize?: number
+}
+
+export type ListPostsResult = {
+  items: PostRecord[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
 function assertSafePathSegment(value: string, fieldName: string) {
   if (!value || value.includes('..') || value.startsWith('/') || value.startsWith('\\')) {
     throw new Error(`${fieldName} 不合法`)
@@ -155,7 +171,11 @@ async function walkBlogFiles(currentDir: string, acc: string[] = []) {
   return acc
 }
 
-export async function listPosts() {
+export async function listPosts(options: ListPostsOptions = {}): Promise<ListPostsResult> {
+  const page = Math.max(1, options.page || 1)
+  const pageSize = Math.min(100, Math.max(1, options.pageSize || 12))
+  const normalizedCategory = options.category ? normalizeAdminPath(options.category) : ''
+  const normalizedKeyword = options.keyword?.trim().toLocaleLowerCase('zh-CN') || ''
   const files = await walkBlogFiles(blogRoot)
   const records = await Promise.all(
     files.map(async (fullPath) => {
@@ -166,9 +186,45 @@ export async function listPosts() {
     })
   )
 
-  return records.sort((a, b) => {
+  const sortedRecords = records.sort((a, b) => {
     return new Date(b.date).getTime() - new Date(a.date).getTime()
   })
+
+  const filteredRecords = normalizedCategory
+    ? sortedRecords.filter((record) => record.category === normalizedCategory)
+    : sortedRecords
+  const keywordFilteredRecords = normalizedKeyword
+    ? filteredRecords.filter((record) => {
+        const searchText = [
+          record.title,
+          record.summary,
+          record.adminPath,
+          record.category,
+          ...record.tags,
+          ...record.authors,
+        ]
+          .join(' ')
+          .toLocaleLowerCase('zh-CN')
+        return searchText.includes(normalizedKeyword)
+      })
+    : filteredRecords
+  const statusFilteredRecords = options.status
+    ? keywordFilteredRecords.filter((record) =>
+        options.status === 'draft' ? record.draft : !record.draft
+      )
+    : keywordFilteredRecords
+  const total = statusFilteredRecords.length
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
+  const currentPage = Math.min(page, totalPages)
+  const startIndex = (currentPage - 1) * pageSize
+
+  return {
+    items: statusFilteredRecords.slice(startIndex, startIndex + pageSize),
+    total,
+    page: currentPage,
+    pageSize,
+    totalPages,
+  }
 }
 
 export async function listCategories() {
