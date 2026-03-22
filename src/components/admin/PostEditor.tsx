@@ -1,9 +1,11 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminShell from './AdminShell'
+import PostPreview from './PostPreview'
 import {
   createPost,
   fetchCategories,
@@ -14,6 +16,15 @@ import {
   uploadAsset,
 } from './api'
 import type { PublishState } from './types'
+
+const MdxCodeEditor = dynamic(() => import('./MdxCodeEditor'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-[42rem] items-center justify-center px-6 py-6 text-sm text-slate-400 dark:text-slate-500">
+      正在加载编辑器…
+    </div>
+  ),
+})
 
 type PostEditorProps = {
   adminPath?: string
@@ -214,129 +225,6 @@ function PublishBanner({ state }: { state: PublishState | null }) {
       <div className="mt-3 flex flex-wrap gap-4 text-xs opacity-80">
         <span>开始：{formatDateTimeLabel(state.startedAt)}</span>
         <span>结束：{formatDateTimeLabel(state.finishedAt)}</span>
-      </div>
-    </div>
-  )
-}
-
-function PreviewContent({
-  title,
-  summary,
-  body,
-}: {
-  title: string
-  summary: string
-  body: string
-}) {
-  const blocks = useMemo(
-    () =>
-      body
-        .split(/\n{2,}/)
-        .map((item) => item.trim())
-        .filter(Boolean),
-    [body]
-  )
-
-  return (
-    <div className="h-full overflow-y-auto px-6 py-6">
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-8 border-b border-slate-100 pb-6 dark:border-slate-800">
-          <p className="text-xs font-semibold tracking-[0.28em] text-slate-400 uppercase">
-            Preview
-          </p>
-          <h2 className="mt-3 text-3xl font-bold text-slate-900 dark:text-slate-50">
-            {title || '未命名文章'}
-          </h2>
-          <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
-            {summary || '这里会展示摘要区的内容，方便你检查列表页与 SEO 文案。'}
-          </p>
-        </div>
-
-        <div className="space-y-4 text-sm leading-8 text-slate-700 dark:text-slate-200">
-          {blocks.length > 0 ? (
-            blocks.map((block, index) => {
-              if (block.startsWith('### ')) {
-                return (
-                  <h5
-                    key={`${block}-${index}`}
-                    className="text-lg font-semibold text-slate-900 dark:text-slate-50"
-                  >
-                    {block.replace(/^###\s+/, '')}
-                  </h5>
-                )
-              }
-
-              if (block.startsWith('## ')) {
-                return (
-                  <h4
-                    key={`${block}-${index}`}
-                    className="text-xl font-semibold text-slate-900 dark:text-slate-50"
-                  >
-                    {block.replace(/^##\s+/, '')}
-                  </h4>
-                )
-              }
-
-              if (block.startsWith('# ')) {
-                return (
-                  <h3
-                    key={`${block}-${index}`}
-                    className="text-2xl font-bold text-slate-900 dark:text-slate-50"
-                  >
-                    {block.replace(/^#\s+/, '')}
-                  </h3>
-                )
-              }
-
-              if (block.startsWith('- ') || block.startsWith('* ')) {
-                const items = block
-                  .split('\n')
-                  .map((item) => item.replace(/^[-*]\s+/, '').trim())
-                  .filter(Boolean)
-
-                return (
-                  <ul key={`${block}-${index}`} className="list-disc space-y-2 pl-5">
-                    {items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                )
-              }
-
-              if (block.startsWith('> ')) {
-                return (
-                  <blockquote
-                    key={`${block}-${index}`}
-                    className="rounded-r-xl border-l-4 border-blue-200 bg-blue-50/60 px-4 py-3 text-slate-600 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-slate-300"
-                  >
-                    {block.replace(/^>\s+/, '')}
-                  </blockquote>
-                )
-              }
-
-              if (block.startsWith('```') && block.endsWith('```')) {
-                return (
-                  <pre
-                    key={`${block}-${index}`}
-                    className="overflow-x-auto rounded-2xl bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-slate-100"
-                  >
-                    <code>{block.replace(/^```[^\n]*\n?/, '').replace(/\n```$/, '')}</code>
-                  </pre>
-                )
-              }
-
-              return (
-                <p key={`${block}-${index}`} className="whitespace-pre-wrap">
-                  {block}
-                </p>
-              )
-            })
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-400 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-500">
-              正文预览会随着输入即时更新。
-            </div>
-          )}
-        </div>
       </div>
     </div>
   )
@@ -550,32 +438,16 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              {previewHref ? (
+            {previewHref ? (
+              <div className="flex flex-wrap items-center gap-3">
                 <Link
                   href={previewHref}
                   className="rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   前台预览
                 </Link>
-              ) : null}
-              <button
-                type="button"
-                disabled={isPending || loading}
-                onClick={() => savePost(false)}
-                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
-              >
-                {isPending ? '保存中...' : '保存草稿'}
-              </button>
-              <button
-                type="button"
-                disabled={isPending || loading}
-                onClick={() => savePost(true)}
-                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                保存并发布
-              </button>
-            </div>
+              </div>
+            ) : null}
           </div>
         </section>
 
@@ -659,20 +531,18 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
                 </div>
 
                 {editorView === 'editor' ? (
-                  <textarea
+                  <MdxCodeEditor
                     value={formState.body}
-                    onChange={(event) =>
+                    onChange={(value) =>
                       setFormState((currentState) => ({
                         ...currentState,
-                        body: event.target.value,
+                        body: value,
                       }))
                     }
-                    rows={28}
-                    className="min-h-[42rem] flex-1 resize-none border-0 bg-transparent px-6 py-6 font-mono text-sm leading-8 text-slate-700 outline-none placeholder:text-slate-300 dark:text-slate-100 dark:placeholder:text-slate-600"
                     placeholder="在这里开始输入正文，支持直接粘贴 Markdown 和拖拽图片..."
                   />
                 ) : (
-                  <PreviewContent
+                  <PostPreview
                     title={formState.title}
                     summary={formState.summary}
                     body={formState.body}
