@@ -35,6 +35,8 @@ type FormState = {
   draft: boolean
 }
 
+type EditorView = 'editor' | 'preview'
+
 const defaultFormState: FormState = {
   title: '',
   category: '',
@@ -52,7 +54,7 @@ const defaultFormState: FormState = {
 }
 
 const inputClassName =
-  'border-ledger-border bg-white/80 text-ledger-text placeholder:text-ledger-text-soft/70 focus:border-ledger-accent focus:ring-ledger-accent/20 w-full rounded-2xl border px-4 py-3 text-sm outline-none transition focus:ring-4 dark:bg-slate-950/60'
+  'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500/30 dark:focus:ring-sky-500/10'
 
 const textAreaClassName = `${inputClassName} resize-y`
 
@@ -112,62 +114,56 @@ function fromPost(post: Awaited<ReturnType<typeof fetchPost>>['post']): FormStat
   }
 }
 
-function PublishBanner({ state }: { state: PublishState | null }) {
-  if (!state) return null
-
+function StatusPill({
+  active,
+  children,
+  tone = 'neutral',
+}: {
+  active?: boolean
+  children: React.ReactNode
+  tone?: 'neutral' | 'amber' | 'green' | 'blue'
+}) {
   const toneClassName =
-    state.status === 'success'
-      ? 'border-emerald-200/80 bg-emerald-50/80 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-      : state.status === 'failed'
-        ? 'border-rose-200/80 bg-rose-50/80 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'
-        : state.status === 'running'
-          ? 'border-sky-200/80 bg-sky-50/80 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200'
-          : 'border-ledger-border bg-white/70 text-ledger-text-soft dark:bg-slate-950/50'
+    tone === 'amber'
+      ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-200'
+      : tone === 'green'
+        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-200'
+        : tone === 'blue'
+          ? 'bg-blue-50 text-blue-600 dark:bg-sky-500/10 dark:text-sky-200'
+          : 'bg-slate-100 text-slate-600 dark:bg-slate-900 dark:text-slate-300'
 
   return (
-    <div className={`rounded-[1.75rem] border px-5 py-4 text-sm ${toneClassName}`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold tracking-[0.3em] uppercase">Publish</span>
-        <span className="rounded-full bg-black/5 px-2.5 py-1 text-xs font-semibold capitalize dark:bg-white/10">
-          {state.status}
-        </span>
-      </div>
-      <p className="mt-3 leading-6">{state.message}</p>
-      <div className="mt-3 flex flex-wrap gap-4 text-xs opacity-80">
-        <span>开始：{formatDateTimeLabel(state.startedAt)}</span>
-        <span>结束：{formatDateTimeLabel(state.finishedAt)}</span>
-      </div>
-    </div>
+    <span
+      className={`rounded-full px-3 py-1 text-xs font-medium ${
+        active ? `${toneClassName} shadow-sm` : 'bg-transparent text-slate-400'
+      }`}
+    >
+      {children}
+    </span>
   )
 }
 
-function SectionCard({
-  eyebrow,
+function SideCard({
   title,
+  icon,
   description,
   children,
-  compact = false,
 }: {
-  eyebrow: string
   title: string
-  description: string
+  icon: string
+  description?: string
   children: React.ReactNode
-  compact?: boolean
 }) {
   return (
-    <section
-      className={`ledger-panel border-ledger-border shadow-ledger-sm rounded-[2rem] border ${
-        compact ? 'p-4 md:p-5' : 'p-5 md:p-6'
-      }`}
-    >
-      <div className={`space-y-2 ${compact ? 'mb-4' : 'mb-5'}`}>
-        <p className="text-ledger-text-soft text-[11px] font-semibold tracking-[0.3em] uppercase">
-          {eyebrow}
-        </p>
-        <div className="space-y-1">
-          <h2 className="text-ledger-text text-xl font-semibold">{title}</h2>
-          <p className="text-ledger-text-soft text-sm leading-7">{description}</p>
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+      <div className="mb-4 space-y-1.5">
+        <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-100">
+          <span className="text-slate-400 dark:text-slate-500">{icon}</span>
+          <span>{title}</span>
         </div>
+        {description ? (
+          <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">{description}</p>
+        ) : null}
       </div>
       {children}
     </section>
@@ -184,13 +180,165 @@ function Field({
   children: React.ReactNode
 }) {
   return (
-    <label className="block space-y-2">
+    <label className="block space-y-1.5">
       <span className="flex items-center justify-between gap-3">
-        <span className="text-ledger-text text-sm font-medium">{label}</span>
-        {hint ? <span className="text-ledger-text-soft text-xs">{hint}</span> : null}
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{label}</span>
+        {hint ? <span className="text-xs text-slate-400 dark:text-slate-500">{hint}</span> : null}
       </span>
       {children}
     </label>
+  )
+}
+
+function PublishBanner({ state }: { state: PublishState | null }) {
+  if (!state) return null
+
+  const toneClassName =
+    state.status === 'success'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+      : state.status === 'failed'
+        ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'
+        : state.status === 'running'
+          ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200'
+          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
+
+  return (
+    <div className={`rounded-2xl border p-4 text-sm ${toneClassName}`}>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-[11px] font-semibold tracking-[0.28em] uppercase">Publish</span>
+        <span className="rounded-full bg-black/5 px-2.5 py-1 text-xs font-semibold capitalize dark:bg-white/10">
+          {state.status}
+        </span>
+      </div>
+      <p className="mt-3 leading-6">{state.message}</p>
+      <div className="mt-3 flex flex-wrap gap-4 text-xs opacity-80">
+        <span>开始：{formatDateTimeLabel(state.startedAt)}</span>
+        <span>结束：{formatDateTimeLabel(state.finishedAt)}</span>
+      </div>
+    </div>
+  )
+}
+
+function PreviewContent({
+  title,
+  summary,
+  body,
+}: {
+  title: string
+  summary: string
+  body: string
+}) {
+  const blocks = useMemo(
+    () =>
+      body
+        .split(/\n{2,}/)
+        .map((item) => item.trim())
+        .filter(Boolean),
+    [body]
+  )
+
+  return (
+    <div className="h-full overflow-y-auto px-6 py-6">
+      <div className="mx-auto max-w-3xl">
+        <div className="mb-8 border-b border-slate-100 pb-6 dark:border-slate-800">
+          <p className="text-xs font-semibold tracking-[0.28em] text-slate-400 uppercase">
+            Preview
+          </p>
+          <h2 className="mt-3 text-3xl font-bold text-slate-900 dark:text-slate-50">
+            {title || '未命名文章'}
+          </h2>
+          <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
+            {summary || '这里会展示摘要区的内容，方便你检查列表页与 SEO 文案。'}
+          </p>
+        </div>
+
+        <div className="space-y-4 text-sm leading-8 text-slate-700 dark:text-slate-200">
+          {blocks.length > 0 ? (
+            blocks.map((block, index) => {
+              if (block.startsWith('### ')) {
+                return (
+                  <h5
+                    key={`${block}-${index}`}
+                    className="text-lg font-semibold text-slate-900 dark:text-slate-50"
+                  >
+                    {block.replace(/^###\s+/, '')}
+                  </h5>
+                )
+              }
+
+              if (block.startsWith('## ')) {
+                return (
+                  <h4
+                    key={`${block}-${index}`}
+                    className="text-xl font-semibold text-slate-900 dark:text-slate-50"
+                  >
+                    {block.replace(/^##\s+/, '')}
+                  </h4>
+                )
+              }
+
+              if (block.startsWith('# ')) {
+                return (
+                  <h3
+                    key={`${block}-${index}`}
+                    className="text-2xl font-bold text-slate-900 dark:text-slate-50"
+                  >
+                    {block.replace(/^#\s+/, '')}
+                  </h3>
+                )
+              }
+
+              if (block.startsWith('- ') || block.startsWith('* ')) {
+                const items = block
+                  .split('\n')
+                  .map((item) => item.replace(/^[-*]\s+/, '').trim())
+                  .filter(Boolean)
+
+                return (
+                  <ul key={`${block}-${index}`} className="list-disc space-y-2 pl-5">
+                    {items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                )
+              }
+
+              if (block.startsWith('> ')) {
+                return (
+                  <blockquote
+                    key={`${block}-${index}`}
+                    className="rounded-r-xl border-l-4 border-blue-200 bg-blue-50/60 px-4 py-3 text-slate-600 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-slate-300"
+                  >
+                    {block.replace(/^>\s+/, '')}
+                  </blockquote>
+                )
+              }
+
+              if (block.startsWith('```') && block.endsWith('```')) {
+                return (
+                  <pre
+                    key={`${block}-${index}`}
+                    className="overflow-x-auto rounded-2xl bg-slate-950 px-4 py-4 font-mono text-xs leading-6 text-slate-100"
+                  >
+                    <code>{block.replace(/^```[^\n]*\n?/, '').replace(/\n```$/, '')}</code>
+                  </pre>
+                )
+              }
+
+              return (
+                <p key={`${block}-${index}`} className="whitespace-pre-wrap">
+                  {block}
+                </p>
+              )
+            })
+          ) : (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-5 py-6 text-sm text-slate-400 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-500">
+              正文预览会随着输入即时更新。
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -213,6 +361,7 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
   const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(Boolean(adminPath))
   const [copiedSnippet, setCopiedSnippet] = useState(false)
+  const [editorView, setEditorView] = useState<EditorView>('editor')
   const [lastSavedSnapshot, setLastSavedSnapshot] = useState(() =>
     JSON.stringify(toPayload(defaultFormState))
   )
@@ -225,7 +374,32 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
     return formState.body.trim() ? formState.body.trim().split(/\s+/).length : 0
   }, [formState.body])
   const readingMinutes = Math.max(1, Math.ceil(bodyWordCount / 220))
+  const bodyLineCount = useMemo(
+    () => (formState.body ? formState.body.split('\n').filter(Boolean).length : 0),
+    [formState.body]
+  )
+  const tagCount = useMemo(
+    () =>
+      formState.tags
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean).length,
+    [formState.tags]
+  )
+  const imageCount = useMemo(
+    () =>
+      formState.images
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean).length,
+    [formState.images]
+  )
   const previewHref = resolvedPath ? `/blog/${resolvedPath}` : null
+  const draftFilePath = useMemo(() => {
+    const slug = formState.slug.trim() || 'slug'
+    const category = formState.category.trim() || '分类目录'
+    return `data/blog/${category}/${slug}.mdx`
+  }, [formState.category, formState.slug])
 
   useEffect(() => {
     let active = true
@@ -274,6 +448,7 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
         if (!formState.category.trim()) {
           throw new Error('请先选择或输入文章分类目录')
         }
+
         const nextFormState = publishAfterSave
           ? {
               ...formState,
@@ -311,6 +486,7 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
     }
 
     try {
+      setError('')
       const response = await uploadAsset(adminKey, resolvedPath, file)
       setAssetSnippet(response.asset.markdown)
       setFormState((currentState) => ({
@@ -338,346 +514,151 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
   return (
     <AdminShell
       title={pageTitle}
-      description="将后台编辑页重构为更适合高频写作的工作台：文章目录改为由你选择分类，正文编辑仍然保持主工作区。"
+      description="左侧沉浸式标题与正文编辑，右侧统一承载发布动作、基础信息和资源上传"
     >
-      <section className="ledger-panel border-ledger-border shadow-ledger-sm sticky top-4 z-10 rounded-[2rem] border px-5 py-5 backdrop-blur md:px-6">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-ledger-text text-lg font-semibold">{pageTitle}</span>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                  hasUnsavedChanges
-                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200'
-                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200'
-                }`}
-              >
-                {hasUnsavedChanges ? '未保存变更' : '内容已同步'}
-              </span>
-              <span className="bg-ledger-accent-soft/60 text-ledger-text rounded-full px-3 py-1 text-xs font-semibold">
-                {formState.draft ? '草稿模式' : '发布模式'}
-              </span>
+      <div className="space-y-6">
+        <section className="sticky top-4 z-10 rounded-[2rem] border border-slate-200 bg-white/90 px-5 py-5 shadow-sm backdrop-blur md:px-6 dark:border-slate-800 dark:bg-slate-950/85">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+                <Link
+                  href="/admin/posts"
+                  className="inline-flex items-center gap-1 transition hover:text-blue-600 dark:hover:text-sky-300"
+                >
+                  <span>←</span>
+                  <span>返回文章列表</span>
+                </Link>
+                <span className="text-slate-300 dark:text-slate-700">|</span>
+                <StatusPill active tone={hasUnsavedChanges ? 'amber' : 'green'}>
+                  {hasUnsavedChanges ? '未保存草稿' : '内容已同步'}
+                </StatusPill>
+                <span className="text-xs text-slate-400 dark:text-slate-500">
+                  自动保存于 {savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusPill active tone={formState.draft ? 'amber' : 'blue'}>
+                  {formState.draft ? '草稿模式' : '发布模式'}
+                </StatusPill>
+                <StatusPill active tone="neutral">
+                  {resolvedPath || '路径待生成'}
+                </StatusPill>
+                <StatusPill active tone="neutral">
+                  {bodyWordCount} 词 / 约 {readingMinutes} 分钟
+                </StatusPill>
+              </div>
             </div>
 
-            <div className="flex flex-wrap gap-3 text-sm">
-              <Link href="/admin/posts" className="ledger-chip rounded-full px-4 py-2">
-                返回列表
-              </Link>
+            <div className="flex flex-wrap items-center gap-3">
               {previewHref ? (
-                <Link href={previewHref} className="ledger-chip rounded-full px-4 py-2">
-                  预览前台
+                <Link
+                  href={previewHref}
+                  className="rounded-xl border border-slate-200 bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  前台预览
                 </Link>
               ) : null}
-            </div>
-
-            <div className="flex flex-col gap-2 text-sm md:flex-row md:flex-wrap md:items-center md:gap-4">
-              <span className="text-ledger-text-soft">
-                当前路径：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {resolvedPath ||
-                    `${formState.category || '分类目录'}/${formState.slug || 'slug'}`}
-                </span>
-              </span>
-              <span className="text-ledger-text-soft">
-                最近保存：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}
-                </span>
-              </span>
-              <span className="text-ledger-text-soft">
-                正文统计：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {bodyWordCount} 词 · 约 {readingMinutes} 分钟
-                </span>
-              </span>
+              <button
+                type="button"
+                disabled={isPending || loading}
+                onClick={() => savePost(false)}
+                className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
+              >
+                {isPending ? '保存中...' : '保存草稿'}
+              </button>
+              <button
+                type="button"
+                disabled={isPending || loading}
+                onClick={() => savePost(true)}
+                className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                保存并发布
+              </button>
             </div>
           </div>
+        </section>
 
-          <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              disabled={isPending || loading}
-              onClick={() => savePost(false)}
-              className="bg-ledger-accent rounded-full px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {isPending ? '保存中...' : '保存草稿'}
-            </button>
-            <button
-              type="button"
-              disabled={isPending || loading}
-              onClick={() => savePost(true)}
-              className="border-ledger-border-strong text-ledger-text rounded-full border bg-white/70 px-5 py-3 text-sm font-semibold disabled:opacity-60 dark:bg-slate-950/40"
-            >
-              保存并发布
-            </button>
+        {error ? (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+            {error}
           </div>
-        </div>
-      </section>
+        ) : null}
 
-      {error ? (
-        <div className="rounded-[1.75rem] border border-rose-200/80 bg-rose-50/80 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-          {error}
-        </div>
-      ) : null}
+        {info ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+            {info}
+          </div>
+        ) : null}
 
-      {info ? (
-        <div className="rounded-[1.75rem] border border-emerald-200/80 bg-emerald-50/80 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-          {info}
-        </div>
-      ) : null}
+        {loading ? (
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+            <p className="text-sm text-slate-500 dark:text-slate-400">正在加载文章内容...</p>
+          </div>
+        ) : (
+          <form
+            className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_20rem]"
+            onSubmit={(event) => {
+              event.preventDefault()
+              savePost(false)
+            }}
+          >
+            <div className="min-w-0 space-y-6">
+              <div className="space-y-4">
+                <input
+                  value={formState.title}
+                  onChange={(event) =>
+                    setFormState((currentState) => ({
+                      ...currentState,
+                      title: event.target.value,
+                    }))
+                  }
+                  className="w-full border-none bg-transparent px-1 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300 md:text-5xl dark:text-slate-50 dark:placeholder:text-slate-700"
+                  placeholder="输入文章标题..."
+                />
+                <p className="px-1 text-sm leading-7 text-slate-500 dark:text-slate-400">
+                  当前文件预计写入到
+                  <span className="ml-1 rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    {resolvedPath ? `${resolvedPath}.mdx` : draftFilePath}
+                  </span>
+                </p>
+              </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div>
-          {loading ? (
-            <div className="ledger-panel border-ledger-border shadow-ledger-sm rounded-[2rem] border p-6">
-              <p className="text-ledger-text-soft text-sm">正在加载文章...</p>
-            </div>
-          ) : null}
-
-          {!loading ? (
-            <form
-              className="space-y-6"
-              onSubmit={(event) => {
-                event.preventDefault()
-                savePost(false)
-              }}
-            >
-              <SectionCard
-                eyebrow="Quick Setup"
-                title="文章信息"
-                description="把基础信息与元数据压缩在同一块，并由你明确指定文章分类目录。"
-                compact
-              >
-                <div className="grid gap-4 xl:grid-cols-12">
-                  <div className="xl:col-span-6">
-                    <Field label="标题" hint="文章主标题">
-                      <input
-                        value={formState.title}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            title: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="输入文章标题"
-                      />
-                    </Field>
+              <section className="flex min-h-[42rem] flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/60">
+                <div className="flex flex-col gap-4 border-b border-slate-100 bg-slate-50/70 px-4 py-3 md:flex-row md:items-center md:justify-between dark:border-slate-800 dark:bg-slate-900/60">
+                  <div className="flex items-center gap-2 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setEditorView('editor')}
+                      className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                        editorView === 'editor'
+                          ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-950 dark:text-sky-300'
+                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
+                      }`}
+                    >
+                      MDX 编辑
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditorView('preview')}
+                      className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+                        editorView === 'preview'
+                          ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-950 dark:text-sky-300'
+                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
+                      }`}
+                    >
+                      实时预览
+                    </button>
                   </div>
 
-                  <div className="xl:col-span-3">
-                    <Field label="分类目录" hint="决定 data/blog 下的目录">
-                      <>
-                        <input
-                          list="admin-category-options"
-                          value={formState.category}
-                          onChange={(event) =>
-                            setFormState((currentState) => ({
-                              ...currentState,
-                              category: event.target.value,
-                            }))
-                          }
-                          className={inputClassName}
-                          placeholder="例如：frontend / notes / 2026"
-                          required
-                        />
-                        <datalist id="admin-category-options">
-                          {categoryOptions.map((category) => (
-                            <option key={category} value={category} />
-                          ))}
-                        </datalist>
-                      </>
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-3">
-                    <Field label="发布日期" hint="精确到分钟">
-                      <input
-                        type="datetime-local"
-                        value={formState.date}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            date: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-2">
-                    <Field label="布局" hint="默认 PostLayout">
-                      <input
-                        value={formState.layout}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            layout: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-3">
-                    <Field label="Slug" hint={resolvedPath ? '编辑模式已锁定' : '仅新建生效'}>
-                      <input
-                        value={formState.slug}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            slug: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="留空则按标题生成"
-                        disabled={Boolean(resolvedPath)}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-3">
-                    <Field label="标签" hint="逗号分隔">
-                      <input
-                        value={formState.tags}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            tags: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="design, admin"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-3">
-                    <Field label="作者" hint="逗号分隔">
-                      <input
-                        value={formState.authors}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            authors: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="default"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-7">
-                    <Field label="摘要" hint="用于列表页与 SEO 摘要">
-                      <textarea
-                        value={formState.summary}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            summary: event.target.value,
-                          }))
-                        }
-                        rows={2}
-                        className={textAreaClassName}
-                        placeholder="建议 1-2 句，保持简洁"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-5">
-                    <div className="border-ledger-border rounded-[1.5rem] border bg-white/55 p-4 dark:bg-slate-950/40">
-                      <p className="text-ledger-text text-sm font-semibold">写作状态</p>
-                      <label className="text-ledger-text mt-3 flex items-center gap-3 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={formState.draft}
-                          onChange={(event) =>
-                            setFormState((currentState) => ({
-                              ...currentState,
-                              draft: event.target.checked,
-                            }))
-                          }
-                          className="border-ledger-border rounded"
-                        />
-                        保存为草稿
-                      </label>
-                      <p className="text-ledger-text-soft mt-2 text-xs leading-6">
-                        发布时会自动切换为非草稿状态。
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="xl:col-span-4">
-                    <Field label="Canonical URL" hint="可留空">
-                      <input
-                        value={formState.canonicalUrl}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            canonicalUrl: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                        placeholder="https://example.com/post"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-4">
-                    <Field label="参考文献文件" hint="可留空">
-                      <input
-                        value={formState.bibliography}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            bibliography: event.target.value,
-                          }))
-                        }
-                        className={inputClassName}
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="xl:col-span-4">
-                    <Field label="封面 / 图片路径" hint="每行一条">
-                      <textarea
-                        value={formState.images}
-                        onChange={(event) =>
-                          setFormState((currentState) => ({
-                            ...currentState,
-                            images: event.target.value,
-                          }))
-                        }
-                        rows={2}
-                        className={textAreaClassName}
-                        placeholder="/static/images/posts/2026/03/slug/cover.png"
-                      />
-                    </Field>
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-400 dark:text-slate-500">
+                    <span>{bodyWordCount} 词</span>
+                    <span>{bodyLineCount} 行</span>
+                    <span>约 {readingMinutes} 分钟阅读</span>
                   </div>
                 </div>
-              </SectionCard>
 
-              <SectionCard
-                eyebrow="Editor"
-                title="正文编辑"
-                description="把正文区作为页面核心工作区，直接专注 MDX 写作和内容组织。"
-              >
-                <div className="mb-4 flex flex-wrap items-center gap-3 text-xs">
-                  <span className="rounded-full bg-slate-950 px-3 py-1.5 font-medium text-slate-100">
-                    MDX / Markdown
-                  </span>
-                  <span className="border-ledger-border text-ledger-text-soft rounded-full border bg-white/60 px-3 py-1.5 dark:bg-slate-950/40">
-                    {bodyWordCount} 词
-                  </span>
-                  <span className="border-ledger-border text-ledger-text-soft rounded-full border bg-white/60 px-3 py-1.5 dark:bg-slate-950/40">
-                    预计阅读 {readingMinutes} 分钟
-                  </span>
-                </div>
-
-                <Field label="正文（MDX）" hint="支持直接粘贴图片 Markdown 片段">
+                {editorView === 'editor' ? (
                   <textarea
                     value={formState.body}
                     onChange={(event) =>
@@ -687,109 +668,305 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
                       }))
                     }
                     rows={28}
-                    className="border-ledger-border focus:border-ledger-accent focus:ring-ledger-accent/20 min-h-[42rem] w-full rounded-[1.75rem] border bg-slate-950 px-5 py-5 font-mono text-sm leading-7 text-slate-100 transition outline-none focus:ring-4"
-                    placeholder="在这里开始写作..."
+                    className="min-h-[42rem] flex-1 resize-none border-0 bg-transparent px-6 py-6 font-mono text-sm leading-8 text-slate-700 outline-none placeholder:text-slate-300 dark:text-slate-100 dark:placeholder:text-slate-600"
+                    placeholder="在这里开始输入正文，支持直接粘贴 Markdown 和拖拽图片..."
                   />
-                </Field>
-              </SectionCard>
-            </form>
-          ) : null}
-        </div>
+                ) : (
+                  <PreviewContent
+                    title={formState.title}
+                    summary={formState.summary}
+                    body={formState.body}
+                  />
+                )}
+              </section>
+            </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-28 xl:self-start">
-          <PublishBanner state={publishState} />
+            <aside className="space-y-5 xl:sticky xl:top-24 xl:h-[calc(100vh-8rem)] xl:overflow-y-auto xl:pb-8">
+              <SideCard title="发布操作" icon="🚀">
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    disabled={isPending || loading}
+                    onClick={() => savePost(true)}
+                    className="flex w-full items-center justify-center rounded-xl bg-blue-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    保存并发布
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isPending || loading}
+                    className="flex w-full items-center justify-center rounded-xl bg-slate-100 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    {isPending ? '保存中...' : '保存草稿'}
+                  </button>
+                </div>
+              </SideCard>
 
-          <SectionCard
-            eyebrow="Assets"
-            title="图片上传"
-            description="上传后会自动落到文章资源目录，并返回可直接粘贴的 Markdown 片段。"
-          >
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => handleUpload(event.target.files?.[0] || null)}
-              className="text-ledger-text-soft file:bg-ledger-accent-soft file:text-ledger-text block w-full text-sm file:mr-4 file:rounded-full file:border-0 file:px-4 file:py-2"
-            />
+              <SideCard
+                title="基本信息"
+                icon="🧩"
+                description="保持与原型一致，把分类、路径和布局收拢到一个紧凑侧栏。"
+              >
+                <div className="space-y-4">
+                  <Field label="文章目录（分类）">
+                    <>
+                      <input
+                        list="admin-category-options"
+                        value={formState.category}
+                        onChange={(event) =>
+                          setFormState((currentState) => ({
+                            ...currentState,
+                            category: event.target.value,
+                          }))
+                        }
+                        className={inputClassName}
+                        placeholder="例如：notes / tech / essays"
+                        required
+                      />
+                      <datalist id="admin-category-options">
+                        {categoryOptions.map((category) => (
+                          <option key={category} value={category} />
+                        ))}
+                      </datalist>
+                    </>
+                  </Field>
 
-            {assetSnippet ? (
-              <div className="mt-4 space-y-3">
-                <textarea
-                  readOnly
-                  value={assetSnippet}
-                  rows={5}
-                  className="border-ledger-border w-full rounded-2xl border bg-white/80 px-4 py-3 font-mono text-sm dark:bg-slate-950/60"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopySnippet}
-                  className="ledger-chip rounded-full px-4 py-2 text-sm"
-                >
-                  {copiedSnippet ? '已复制 Markdown' : '复制 Markdown 片段'}
-                </button>
-              </div>
-            ) : (
-              <p className="text-ledger-text-soft mt-4 text-sm leading-7">
-                首次新建文章请先保存，再上传资源文件。
-              </p>
-            )}
-          </SectionCard>
+                  <Field
+                    label="自定义 Slug URL"
+                    hint={resolvedPath ? '编辑模式已锁定' : '留空按标题生成'}
+                  >
+                    <input
+                      value={formState.slug}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          slug: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                      placeholder="my-new-post"
+                      disabled={Boolean(resolvedPath)}
+                    />
+                  </Field>
 
-          <SectionCard
-            eyebrow="Publish"
-            title="发布上下文"
-            description="集中查看当前文章的路径、保存状态和构建上下文，避免误操作。"
-          >
-            <ul className="text-ledger-text-soft space-y-3 text-sm leading-7">
-              <li>
-                分类：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {formState.category || '待选择'}
-                </span>
-              </li>
-              <li>
-                路径：
-                <span className="text-ledger-text font-medium">{resolvedPath || '待生成'}</span>
-              </li>
-              <li>
-                文件目录：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {`data/blog/${formState.category || '分类目录'}/`}
-                </span>
-              </li>
-              <li>
-                草稿：
-                <span className="text-ledger-text font-medium">
-                  {formState.draft ? '是' : '否'}
-                </span>
-              </li>
-              <li>
-                最近保存：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}
-                </span>
-              </li>
-              <li>
-                当前发布目标：
-                <span className="text-ledger-text ml-1 font-medium">
-                  {publishState?.currentPath || '等待触发'}
-                </span>
-              </li>
-            </ul>
-          </SectionCard>
+                  <Field label="页面布局">
+                    <input
+                      value={formState.layout}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          layout: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                      placeholder="PostLayout"
+                    />
+                  </Field>
 
-          <SectionCard
-            eyebrow="Guide"
-            title="目录规范"
-            description="保留关键的本地文件约定，但压缩成更易扫读的辅助信息。"
-          >
-            <ul className="text-ledger-text-soft space-y-2 text-sm leading-7">
-              <li>文章：`data/blog/分类目录/slug.mdx`</li>
-              <li>图片：`public/static/images/posts/YYYY/MM/slug/*`</li>
-              <li>标签、作者支持使用逗号批量录入</li>
-              <li>新建文章时需要先指定分类目录，再生成实际路径</li>
-            </ul>
-          </SectionCard>
-        </aside>
+                  <Field label="发布日期">
+                    <input
+                      type="datetime-local"
+                      value={formState.date}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          date: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                    />
+                  </Field>
+                </div>
+              </SideCard>
+
+              <SideCard title="摘要与标签" icon="🏷️">
+                <div className="space-y-4">
+                  <Field label="标签 Tags" hint={`${tagCount} 个`}>
+                    <input
+                      value={formState.tags}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          tags: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                      placeholder="design, admin"
+                    />
+                  </Field>
+
+                  <Field label="作者" hint="逗号分隔">
+                    <input
+                      value={formState.authors}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          authors: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                      placeholder="default"
+                    />
+                  </Field>
+
+                  <Field label="文章摘要">
+                    <textarea
+                      value={formState.summary}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          summary: event.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className={textAreaClassName}
+                      placeholder="用于列表页与 SEO 摘要，建议 1-2 句"
+                    />
+                  </Field>
+
+                  <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={formState.draft}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          draft: event.target.checked,
+                        }))
+                      }
+                      className="mt-1 rounded border-slate-300 dark:border-slate-700"
+                    />
+                    <span className="leading-6">
+                      保持为草稿。点击“保存并发布”时会自动切换为已发布状态。
+                    </span>
+                  </label>
+                </div>
+              </SideCard>
+
+              <SideCard
+                title="图片与资产"
+                icon="🖼️"
+                description="上传后自动写入文章资源目录，并返回可直接粘贴的 Markdown 片段。"
+              >
+                <div className="space-y-4">
+                  <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/10">
+                    <span className="text-2xl">⤴</span>
+                    <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                      点击或拖拽图片到此处
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => handleUpload(event.target.files?.[0] || null)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {assetSnippet ? (
+                    <div className="space-y-3">
+                      <textarea
+                        readOnly
+                        value={assetSnippet}
+                        rows={5}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCopySnippet}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900"
+                      >
+                        {copiedSnippet ? '已复制 Markdown' : '复制 Markdown 片段'}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+                      首次新建文章请先保存，再上传资源文件。
+                    </p>
+                  )}
+                </div>
+              </SideCard>
+
+              <SideCard title="发布上下文" icon="📌">
+                <div className="space-y-3 text-sm text-slate-500 dark:text-slate-400">
+                  <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">当前路径</p>
+                    <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                      {resolvedPath || '待生成'}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">最近保存</p>
+                      <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                        {savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}
+                      </p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
+                      <p className="text-xs text-slate-400 dark:text-slate-500">图片数</p>
+                      <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                        {imageCount}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">发布目标</p>
+                    <p className="mt-1 font-medium text-slate-700 dark:text-slate-200">
+                      {publishState?.currentPath || '等待触发'}
+                    </p>
+                  </div>
+                  <PublishBanner state={publishState} />
+                </div>
+              </SideCard>
+
+              <SideCard title="扩展元数据" icon="🔗">
+                <div className="space-y-4">
+                  <Field label="Canonical URL" hint="可留空">
+                    <input
+                      value={formState.canonicalUrl}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          canonicalUrl: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                      placeholder="https://example.com/post"
+                    />
+                  </Field>
+
+                  <Field label="参考文献文件" hint="可留空">
+                    <input
+                      value={formState.bibliography}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          bibliography: event.target.value,
+                        }))
+                      }
+                      className={inputClassName}
+                      placeholder="references.bib"
+                    />
+                  </Field>
+
+                  <Field label="封面 / 图片路径" hint="每行一条">
+                    <textarea
+                      value={formState.images}
+                      onChange={(event) =>
+                        setFormState((currentState) => ({
+                          ...currentState,
+                          images: event.target.value,
+                        }))
+                      }
+                      rows={4}
+                      className={textAreaClassName}
+                      placeholder="/static/images/posts/2026/03/slug/cover.png"
+                    />
+                  </Field>
+                </div>
+              </SideCard>
+            </aside>
+          </form>
+        )}
       </div>
     </AdminShell>
   )

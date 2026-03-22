@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Logo from '@/data/logo.svg'
 
 export default function AdminShell({
   title,
@@ -11,50 +12,67 @@ export default function AdminShell({
 }) {
   return (
     <div className="space-y-6">
-      <div className="ledger-panel border-ledger-border shadow-ledger-sm rounded-[2rem] border px-6 py-6 md:px-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-ledger-text-soft text-[11px] font-semibold tracking-[0.35em] uppercase">
+      <div className="rounded-[1.75rem] border border-slate-200 bg-white/92 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/78">
+        <div className="flex flex-col gap-4 px-5 py-4 md:px-6 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900">
+                <Logo className="h-full w-full text-slate-900 dark:text-slate-100" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
+                  <span>Blog Admin</span>
+                  <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                  <span>内容工作台</span>
+                </div>
+                <div className="mt-1 flex flex-wrap items-end gap-x-3 gap-y-1">
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{title}</h1>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                    ProtoMe
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-3 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              {description}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 xl:items-end">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+              <span className="rounded-full bg-slate-100 px-3 py-1.5 dark:bg-slate-900">
                 Admin Console
               </span>
-              <span className="border-ledger-border text-ledger-text-soft rounded-full border bg-white/60 px-3 py-1 text-xs dark:bg-slate-950/50">
+              <span className="rounded-full bg-blue-50 px-3 py-1.5 text-blue-600 dark:bg-sky-500/10 dark:text-sky-300">
                 Editorial Workspace
               </span>
             </div>
-            <div>
-              <h1 className="text-ledger-text text-3xl font-semibold md:text-4xl">{title}</h1>
-              <p className="text-ledger-text-soft mt-3 max-w-3xl text-sm leading-7">
-                {description}
-              </p>
-            </div>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <Link
-              href="/admin/posts"
-              className="border-ledger-border text-ledger-text hover:bg-ledger-accent-soft/40 rounded-[1.5rem] border bg-white/70 px-4 py-3 text-sm transition dark:bg-slate-950/40"
-            >
-              <span className="block text-xs tracking-[0.22em] uppercase opacity-60">Console</span>
-              <span className="mt-1 block font-semibold">文章列表</span>
-            </Link>
-            <Link
-              href="/admin/posts/new"
-              className="border-ledger-border text-ledger-text hover:bg-ledger-accent-soft/40 rounded-[1.5rem] border bg-white/70 px-4 py-3 text-sm transition dark:bg-slate-950/40"
-            >
-              <span className="block text-xs tracking-[0.22em] uppercase opacity-60">Create</span>
-              <span className="mt-1 block font-semibold">新建文章</span>
-            </Link>
-            <Link
-              href="/blog"
-              className="border-ledger-border text-ledger-text hover:bg-ledger-accent-soft/40 rounded-[1.5rem] border bg-white/70 px-4 py-3 text-sm transition dark:bg-slate-950/40"
-            >
-              <span className="block text-xs tracking-[0.22em] uppercase opacity-60">Frontend</span>
-              <span className="mt-1 block font-semibold">查看前台</span>
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/admin/posts"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800"
+              >
+                文章列表
+              </Link>
+              <Link
+                href="/admin/posts/new"
+                className="rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2 text-sm font-medium text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/15"
+              >
+                新建文章
+              </Link>
+              <Link
+                href="/blog"
+                className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+              >
+                查看前台
+              </Link>
+            </div>
           </div>
         </div>
       </div>
+
       {children}
     </div>
   )

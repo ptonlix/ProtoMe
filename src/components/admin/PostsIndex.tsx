@@ -93,10 +93,7 @@ function PostsIndexInner({ adminKey }: { adminKey: string }) {
   }, [adminKey, page, pageSize, selectedCategory, selectedStatus, keyword])
 
   return (
-    <AdminShell
-      title="文章管理"
-      description="管理 Blog 文章、草稿与发布任务。现在支持按分类过滤，并通过分页控制列表规模。"
-    >
+    <AdminShell title="文章管理" description="管理 Blog 文章、草稿与发布任务">
       <div className="ledger-panel border-ledger-border shadow-ledger-sm rounded-[2rem] border">
         <div className="border-ledger-border border-b px-6 py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
