@@ -29,10 +29,22 @@ function StatusPill({ draft }: { draft: boolean }) {
 }
 
 export default function PostsIndex() {
-  return <AdminAuthGate>{(adminKey) => <PostsIndexInner adminKey={adminKey} />}</AdminAuthGate>
+  return (
+    <AdminAuthGate>
+      {(adminKey, handleLogout) => (
+        <PostsIndexInner adminKey={adminKey} handleLogout={handleLogout} />
+      )}
+    </AdminAuthGate>
+  )
 }
 
-function PostsIndexInner({ adminKey }: { adminKey: string }) {
+function PostsIndexInner({
+  adminKey,
+  handleLogout,
+}: {
+  adminKey: string
+  handleLogout: () => void
+}) {
   const [posts, setPosts] = useState<AdminPost[]>([])
   const [categories, setCategories] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -93,7 +105,11 @@ function PostsIndexInner({ adminKey }: { adminKey: string }) {
   }, [adminKey, page, pageSize, selectedCategory, selectedStatus, keyword])
 
   return (
-    <AdminShell title="文章管理" description="管理 Blog 文章、草稿与发布任务">
+    <AdminShell
+      title="文章管理"
+      description="管理 Blog 文章、草稿与发布任务"
+      onLogout={handleLogout}
+    >
       <div className="ledger-panel border-ledger-border shadow-ledger-sm rounded-[2rem] border">
         <div className="border-ledger-border border-b px-6 py-5">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">

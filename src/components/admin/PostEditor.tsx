@@ -233,12 +233,22 @@ function PublishBanner({ state }: { state: PublishState | null }) {
 export default function PostEditor({ adminPath }: PostEditorProps) {
   return (
     <AdminAuthGate>
-      {(adminKey) => <PostEditorInner adminKey={adminKey} adminPath={adminPath} />}
+      {(adminKey, handleLogout) => (
+        <PostEditorInner adminKey={adminKey} adminPath={adminPath} handleLogout={handleLogout} />
+      )}
     </AdminAuthGate>
   )
 }
 
-function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?: string }) {
+function PostEditorInner({
+  adminKey,
+  adminPath,
+  handleLogout,
+}: {
+  adminKey: string
+  adminPath?: string
+  handleLogout: () => void
+}) {
   const [formState, setFormState] = useState<FormState>(defaultFormState)
   const [categoryOptions, setCategoryOptions] = useState<string[]>([])
   const [resolvedPath, setResolvedPath] = useState(adminPath || '')
@@ -403,6 +413,7 @@ function PostEditorInner({ adminKey, adminPath }: { adminKey: string; adminPath?
     <AdminShell
       title={pageTitle}
       description="左侧沉浸式标题与正文编辑，右侧统一承载发布动作、基础信息和资源上传"
+      onLogout={handleLogout}
     >
       <div className="space-y-6">
         <section className="sticky top-4 z-10 rounded-[2rem] border border-slate-200 bg-white/90 px-5 py-5 shadow-sm backdrop-blur md:px-6 dark:border-slate-800 dark:bg-slate-950/85">

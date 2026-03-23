@@ -56,6 +56,13 @@ pnpm-debug.log*
 /src-api/dist
 /src-api/node_modules
 
+# TypeScript 增量编译缓存
+/src/tsconfig.tsbuildinfo
+
+# Contentlayer 生成的标签统计
+/src/app/tag-data.json
+/src/app/worklog-tag-data.json
+
 
 # AI Coding
 .cursor

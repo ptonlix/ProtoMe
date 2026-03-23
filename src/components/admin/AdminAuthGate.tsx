@@ -7,7 +7,7 @@ import Logo from '@/data/logo.svg'
 const storageKey = 'protome-admin-key'
 
 type AdminAuthGateProps = {
-  children: (adminKey: string) => React.ReactNode
+  children: (adminKey: string, handleLogout: () => void) => React.ReactNode
 }
 
 export default function AdminAuthGate({ children }: AdminAuthGateProps) {
@@ -196,18 +196,5 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
     )
   }
 
-  return (
-    <div>
-      <div className="mb-4 flex justify-end">
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="rounded-full border border-slate-200 bg-white/80 px-4 py-2 text-sm font-medium text-slate-500 transition hover:border-slate-300 hover:text-slate-800 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:text-slate-200"
-        >
-          退出后台
-        </button>
-      </div>
-      {children(adminKey)}
-    </div>
-  )
+  return <>{children(adminKey, handleLogout)}</>
 }

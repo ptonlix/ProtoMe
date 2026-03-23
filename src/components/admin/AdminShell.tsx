@@ -4,10 +4,12 @@ import Logo from '@/data/logo.svg'
 export default function AdminShell({
   title,
   description,
+  onLogout,
   children,
 }: {
   title: string
   description: string
+  onLogout?: () => void
   children: React.ReactNode
 }) {
   return (
@@ -49,7 +51,7 @@ export default function AdminShell({
               </span>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/admin/posts"
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800"
@@ -68,6 +70,15 @@ export default function AdminShell({
               >
                 查看前台
               </Link>
+              {onLogout ? (
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="ml-1 inline-flex items-center rounded-xl px-3 py-2 text-sm font-medium text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-200"
+                >
+                  退出后台
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
