@@ -23,7 +23,7 @@ export const defaultDevAdminKey = 'protome-local-dev-key'
 export const adminOrigin = process.env.ADMIN_APP_ORIGIN ?? 'http://localhost:3000'
 export const adminKey = process.env.PROTOME_ADMIN_KEY ?? ''
 export const port = Number(process.env.PROTOME_ADMIN_API_PORT ?? 4100)
-export const maxUploadSize = Number(process.env.PROTOME_ADMIN_MAX_UPLOAD_BYTES ?? 5 * 1024 * 1024)
+export const maxUploadSize = Number(process.env.PROTOME_ADMIN_MAX_UPLOAD_BYTES ?? 20 * 1024 * 1024)
 
 export function resolveAdminKey() {
   if (adminKey) {

@@ -5,16 +5,22 @@ export default function AdminShell({
   title,
   description,
   onLogout,
+  immersive = false,
   children,
 }: {
   title: string
   description: string
   onLogout?: () => void
+  immersive?: boolean
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-6">
-      <div className="rounded-[1.75rem] border border-slate-200 bg-white/92 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/78">
+    <div className={immersive ? 'space-y-0' : 'space-y-6'}>
+      <div
+        className={`rounded-[1.75rem] border border-slate-200 bg-white/92 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/78 ${
+          immersive ? 'hidden' : ''
+        }`}
+      >
         <div className="flex flex-col gap-4 px-5 py-4 md:px-6 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">

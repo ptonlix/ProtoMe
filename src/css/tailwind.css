@@ -236,6 +236,27 @@
     }
   }
 
+  body.admin-immersive .ledger-shell {
+    width: 100vw;
+    max-width: none;
+    padding-inline: 0;
+  }
+
+  body.admin-immersive .ledger-shell::before,
+  body.admin-immersive .ledger-shell::after {
+    opacity: 0;
+  }
+
+  body.admin-immersive header.sticky,
+  body.admin-immersive footer {
+    display: none;
+  }
+
+  body.admin-immersive main {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
   .ledger-command-shell {
     border: 1px solid var(--ledger-border);
     border-radius: 1rem;
@@ -582,6 +603,32 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.admin-scrollbar {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.85) transparent;
+}
+
+.admin-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.admin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+  background-color: rgba(148, 163, 184, 0.85);
+}
+
+.admin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.95);
 }
 
 /* https://stackoverflow.com/questions/61083813/how-to-avoid-internal-autofill-selected-style-to-be-applied */

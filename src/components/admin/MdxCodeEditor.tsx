@@ -12,9 +12,15 @@ type MdxCodeEditorProps = {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  immersive?: boolean
 }
 
-export default function MdxCodeEditor({ value, onChange, placeholder }: MdxCodeEditorProps) {
+export default function MdxCodeEditor({
+  value,
+  onChange,
+  placeholder,
+  immersive = false,
+}: MdxCodeEditorProps) {
   const { resolvedTheme } = useTheme()
 
   const extensions = useMemo(
@@ -29,11 +35,15 @@ export default function MdxCodeEditor({ value, onChange, placeholder }: MdxCodeE
   )
 
   return (
-    <div className="h-full min-h-[42rem] overflow-hidden rounded-b-[2rem]">
+    <div
+      className={`h-full overflow-hidden rounded-b-[2rem] ${
+        immersive ? 'min-h-0' : 'min-h-[42rem]'
+      }`}
+    >
       <CodeMirror
         value={value}
         height="100%"
-        minHeight="42rem"
+        minHeight={immersive ? undefined : '42rem'}
         theme={resolvedTheme === 'dark' ? githubDark : githubLight}
         extensions={extensions}
         placeholder={placeholder}
@@ -48,7 +58,7 @@ export default function MdxCodeEditor({ value, onChange, placeholder }: MdxCodeE
           indentOnInput: true,
         }}
         onChange={onChange}
-        className="h-full text-sm"
+        className="h-full min-h-0 text-sm"
       />
     </div>
   )

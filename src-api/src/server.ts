@@ -37,6 +37,18 @@ const app = express()
 app.use(cors({ origin: adminOrigin }))
 app.use(express.json({ limit: '2mb' }))
 
+function formatBytes(bytes: number) {
+  if (bytes >= 1024 * 1024) {
+    return `${Math.round((bytes / (1024 * 1024)) * 10) / 10}MB`
+  }
+
+  if (bytes >= 1024) {
+    return `${Math.round(bytes / 1024)}KB`
+  }
+
+  return `${bytes}B`
+}
+
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
   const key = req.header('x-admin-key')
   if (!key || key !== resolvedAdminKey) {
@@ -232,3 +244,24 @@ app.post('/api/admin/post/publish', async (req, res) => {
 app.listen(port, () => {
   console.log(`ProtoMe Admin API 已启动: http://localhost:${port}`)
 })
+
+app.use(
+  (error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    if (error instanceof multer.MulterError) {
+      if (error.code === 'LIMIT_FILE_SIZE') {
+        res.status(413).json({
+          error: `上传图片过大，当前最大支持 ${formatBytes(maxUploadSize)}，请压缩后重试`,
+        })
+        return
+      }
+
+      res.status(400).json({ error: `上传失败：${error.message}` })
+      return
+    }
+
+    console.error(error)
+    res.status(500).json({
+      error: error instanceof Error ? error.message : '后台服务发生未知错误',
+    })
+  }
+)

@@ -45,7 +45,7 @@ export default function PostPreview({ title, summary, body }: PostPreviewProps) 
   const isSyncing = deferredBody !== body || deferredSummary !== summary
 
   return (
-    <div className="h-full overflow-y-auto px-6 py-6">
+    <div className="admin-scrollbar h-full min-h-0 overflow-y-scroll px-6 py-6">
       <div className="mx-auto max-w-3xl">
         <div className="mb-8 border-b border-slate-100 pb-6 dark:border-slate-800">
           <div className="flex items-center justify-between gap-3">
