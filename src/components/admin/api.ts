@@ -1,6 +1,12 @@
 'use client'
 
-import type { AdminPost, AdminPostsListResponse, PublishState } from './types'
+import type {
+  AdminContentItem,
+  AdminContentListResponse,
+  AdminContentType,
+  ContentTypeKey,
+  PublishState,
+} from './types'
 
 const adminApiBaseUrl =
   process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:4100'
@@ -29,25 +35,30 @@ async function request<T>(pathname: string, options: RequestOptions): Promise<T>
   return payload as T
 }
 
-export async function fetchPosts(
+export async function fetchContentTypes(adminKey: string) {
+  return request<{ types: AdminContentType[] }>('/api/admin/content/types', { adminKey })
+}
+
+export async function fetchContents(
   adminKey: string,
+  type: ContentTypeKey,
   query?: {
-    category?: string
     keyword?: string
-    status?: 'draft' | 'published'
+    status?: string
+    group?: string
     page?: number
     pageSize?: number
   }
 ) {
-  const params = new URLSearchParams()
-  if (query?.category) {
-    params.set('category', query.category)
-  }
+  const params = new URLSearchParams({ type })
   if (query?.keyword) {
     params.set('keyword', query.keyword)
   }
   if (query?.status) {
     params.set('status', query.status)
+  }
+  if (query?.group) {
+    params.set('group', query.group)
   }
   if (query?.page) {
     params.set('page', String(query.page))
@@ -55,65 +66,98 @@ export async function fetchPosts(
   if (query?.pageSize) {
     params.set('pageSize', String(query.pageSize))
   }
-  const pathname = params.size > 0 ? `/api/admin/posts?${params.toString()}` : '/api/admin/posts'
-  return request<AdminPostsListResponse>(pathname, { adminKey })
+
+  return request<AdminContentListResponse>(`/api/admin/content?${params.toString()}`, { adminKey })
 }
 
-export async function fetchCategories(adminKey: string) {
-  return request<{ categories: string[] }>('/api/admin/categories', { adminKey })
+export async function fetchContentItem(adminKey: string, type: ContentTypeKey, adminPath?: string) {
+  const params = new URLSearchParams({ type })
+  if (adminPath) {
+    params.set('path', adminPath)
+  }
+  return request<{ item: AdminContentItem }>(`/api/admin/content/item?${params.toString()}`, {
+    adminKey,
+  })
 }
 
-export async function fetchPost(adminKey: string, adminPath: string) {
-  const query = new URLSearchParams({ path: adminPath })
-  return request<{ post: AdminPost }>(`/api/admin/post?${query.toString()}`, { adminKey })
-}
-
-export async function createPost(adminKey: string, body: unknown) {
-  return request<{ post: AdminPost }>('/api/admin/posts', {
+export async function createContentItem(adminKey: string, type: ContentTypeKey, body: unknown) {
+  const params = new URLSearchParams({ type })
+  return request<{ item: AdminContentItem }>(`/api/admin/content?${params.toString()}`, {
     method: 'POST',
     body,
     adminKey,
   })
 }
 
-export async function updatePost(adminKey: string, adminPath: string, body: unknown) {
-  const query = new URLSearchParams({ path: adminPath })
-  return request<{ post: AdminPost }>(`/api/admin/post?${query.toString()}`, {
+export async function updateContentItem(
+  adminKey: string,
+  type: ContentTypeKey,
+  adminPath: string | undefined,
+  body: unknown
+) {
+  const params = new URLSearchParams({ type })
+  if (adminPath) {
+    params.set('path', adminPath)
+  }
+  return request<{ item: AdminContentItem }>(`/api/admin/content/item?${params.toString()}`, {
     method: 'PUT',
     body,
     adminKey,
   })
 }
 
-export async function publishPost(adminKey: string, adminPath: string) {
-  const query = new URLSearchParams({ path: adminPath })
-  return request<{ publish: PublishState }>(`/api/admin/post/publish?${query.toString()}`, {
-    method: 'POST',
-    body: {},
-    adminKey,
-  })
+export async function publishContentItem(
+  adminKey: string,
+  type: ContentTypeKey,
+  adminPath?: string
+) {
+  const params = new URLSearchParams({ type })
+  if (adminPath) {
+    params.set('path', adminPath)
+  }
+
+  return request<{ publish: PublishState }>(
+    `/api/admin/content/item/publish?${params.toString()}`,
+    {
+      method: 'POST',
+      body: {},
+      adminKey,
+    }
+  )
 }
 
 export async function fetchPublishState(adminKey: string) {
   return request<{ publish: PublishState }>('/api/admin/publish-status', { adminKey })
 }
 
-export async function uploadAsset(adminKey: string, adminPath: string, file: File) {
+export async function uploadContentAsset(
+  adminKey: string,
+  type: ContentTypeKey,
+  adminPath: string | undefined,
+  file: File
+) {
   const formData = new FormData()
   formData.set('file', file)
 
-  const query = new URLSearchParams({ path: adminPath })
-  const response = await fetch(`${adminApiBaseUrl}/api/admin/post/assets?${query.toString()}`, {
-    method: 'POST',
-    headers: {
-      'x-admin-key': adminKey,
-    },
-    body: formData,
-  })
+  const params = new URLSearchParams({ type })
+  if (adminPath) {
+    params.set('path', adminPath)
+  }
+
+  const response = await fetch(
+    `${adminApiBaseUrl}/api/admin/content/item/assets?${params.toString()}`,
+    {
+      method: 'POST',
+      headers: {
+        'x-admin-key': adminKey,
+      },
+      body: formData,
+    }
+  )
 
   const payload = await response.json()
   if (!response.ok) {
-    throw new Error(payload.error || '图片上传失败')
+    throw new Error(payload.error || '资源上传失败')
   }
 
   return payload as {

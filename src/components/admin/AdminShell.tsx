@@ -29,7 +29,7 @@ export default function AdminShell({
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
-                  <span>Blog Admin</span>
+                  <span>Content Admin</span>
                   <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                   <span>内容工作台</span>
                 </div>
@@ -59,13 +59,13 @@ export default function AdminShell({
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
-                href="/admin/posts"
+                href="/admin/content"
                 className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-800"
               >
-                文章列表
+                内容总览
               </Link>
               <Link
-                href="/admin/posts/new"
+                href="/admin/content/blog/new"
                 className="rounded-xl border border-blue-100 bg-blue-50 px-3.5 py-2 text-sm font-medium text-blue-700 transition hover:border-blue-200 hover:bg-blue-100 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/15"
               >
                 新建文章

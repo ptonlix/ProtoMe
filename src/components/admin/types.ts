@@ -1,19 +1,48 @@
-export type AdminPost = {
+export type ContentTypeKey = 'blog' | 'profile' | 'project' | 'authors' | 'worklog' | 'about'
+
+export type ContentMode = 'singleton' | 'collection'
+
+export type StatusTone = 'neutral' | 'amber' | 'green' | 'blue'
+
+export type AdminContentType = {
+  key: ContentTypeKey
+  label: string
+  description: string
+  mode: ContentMode
+  supportsAssets: boolean
+  statusFilterLabel?: string
+  statusOptions: Array<{ value: string; label: string }>
+  groupFilterLabel?: string
+}
+
+export type AdminContentItem = {
+  type: ContentTypeKey
   adminPath: string
-  category: string
   filePath: string
   title: string
-  date: string
   summary: string
-  tags: string[]
-  authors: string[]
-  images: string[]
-  draft: boolean
-  layout: string
-  bibliography?: string
-  canonicalUrl?: string
   body: string
+  frontmatter: Record<string, unknown>
   lastmod?: string
+  updatedAt?: string
+  displayStatus: {
+    value: string
+    label: string
+    tone: StatusTone
+  }
+  group?: {
+    value: string
+    label: string
+  }
+}
+
+export type AdminContentListResponse = {
+  items: AdminContentItem[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  availableGroups: string[]
 }
 
 export type PublishState = {
@@ -22,12 +51,4 @@ export type PublishState = {
   currentPath: string | null
   startedAt: string | null
   finishedAt: string | null
-}
-
-export type AdminPostsListResponse = {
-  items: AdminPost[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }

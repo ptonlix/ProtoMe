@@ -7,13 +7,21 @@ import { spawn } from 'node:child_process'
 import { adminOrigin, maxUploadSize, port, resolveAdminKey, workspaceRoot } from './config.js'
 import {
   createPost,
+  createContent,
+  getContentType,
   imageDirFromPost,
+  imageDirFromContent,
   listCategories,
+  listContent,
+  listContentTypes,
   listPosts,
   normalizeAdminPath,
   normalizeSlug,
+  readContent,
   readPost,
   updatePost,
+  updateContent,
+  validateStoredContent,
   validateStoredPost,
 } from './content.js'
 import { publishState } from './publish-state.js'
@@ -66,6 +74,20 @@ function getAdminPath(req: express.Request) {
   return normalizeAdminPath(raw)
 }
 
+function getContentTypeKey(req: express.Request) {
+  const raw = String(req.query.type || '').trim()
+  if (!raw) {
+    throw new Error('缺少内容类型 type')
+  }
+
+  return getContentType(raw).type.key
+}
+
+function getOptionalContentPath(req: express.Request) {
+  const raw = typeof req.query.path === 'string' ? req.query.path : ''
+  return raw ? normalizeAdminPath(raw, '内容路径') : undefined
+}
+
 function safeFileName(originalName: string) {
   const extension = path.extname(originalName).toLowerCase()
   const baseName = path.basename(originalName, extension)
@@ -78,6 +100,118 @@ app.get('/health', (_req, res) => {
 })
 
 app.use('/api/admin', requireAdmin)
+
+app.get('/api/admin/content/types', (_req, res) => {
+  res.json({ types: listContentTypes() })
+})
+
+app.get('/api/admin/content', async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    const rawKeyword = typeof req.query.keyword === 'string' ? req.query.keyword : undefined
+    const rawStatus = typeof req.query.status === 'string' ? req.query.status : undefined
+    const rawGroup = typeof req.query.group === 'string' ? req.query.group : undefined
+    const rawPage = typeof req.query.page === 'string' ? Number.parseInt(req.query.page, 10) : 1
+    const rawPageSize =
+      typeof req.query.pageSize === 'string' ? Number.parseInt(req.query.pageSize, 10) : 12
+
+    const result = await listContent({
+      type,
+      keyword: rawKeyword,
+      status: rawStatus,
+      group: rawGroup,
+      page: Number.isNaN(rawPage) ? 1 : rawPage,
+      pageSize: Number.isNaN(rawPageSize) ? 12 : rawPageSize,
+    })
+
+    res.json(result)
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : '内容列表读取失败' })
+  }
+})
+
+app.get('/api/admin/content/item', async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    const entry = getContentType(type)
+    const item = await readContent(
+      type,
+      entry.type.mode === 'singleton' ? undefined : getOptionalContentPath(req)
+    )
+    res.json({ item })
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : '内容读取失败' })
+  }
+})
+
+app.post('/api/admin/content', async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    const item = await createContent(type, req.body)
+    res.status(201).json({ item })
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : '内容创建失败' })
+  }
+})
+
+app.put('/api/admin/content/item', async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    const entry = getContentType(type)
+    const item = await updateContent(
+      type,
+      entry.type.mode === 'singleton' ? undefined : getOptionalContentPath(req),
+      req.body
+    )
+    res.json({ item })
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : '内容更新失败' })
+  }
+})
+
+app.post('/api/admin/content/item/assets', upload.single('file'), async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    if (!req.file) {
+      throw new Error('未上传文件')
+    }
+    if (!allowedMimeTypes.has(req.file.mimetype)) {
+      throw new Error('仅支持 png、jpg、webp、gif、svg、avif 图片')
+    }
+
+    const entry = getContentType(type)
+    if (!entry.type.supportsAssets) {
+      throw new Error('当前内容类型不支持资源上传')
+    }
+
+    const content = await validateStoredContent(
+      type,
+      entry.type.mode === 'singleton' ? undefined : getOptionalContentPath(req)
+    )
+    const uploadDir = imageDirFromContent(type, content)
+    await fs.mkdir(uploadDir, { recursive: true })
+
+    const fileName = safeFileName(req.file.originalname)
+    const outputPath = path.join(uploadDir, fileName)
+    await fs.writeFile(outputPath, req.file.buffer)
+
+    const relativePath = path
+      .relative(path.join(workspaceRoot, 'public'), outputPath)
+      .replace(/\\/g, '/')
+
+    res.status(201).json({
+      asset: {
+        src: `/${relativePath}`,
+        alt: content.title,
+        markdown: `![${content.title}](/${relativePath})`,
+        size: req.file.size,
+        mimeType: req.file.mimetype,
+      },
+    })
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : '资源上传失败' })
+  }
+})
 
 app.get('/api/admin/posts', async (req, res) => {
   try {
@@ -236,6 +370,70 @@ app.post('/api/admin/post/publish', async (req, res) => {
     res.status(202).json({
       publish: publishState,
     })
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : '发布触发失败' })
+  }
+})
+
+app.post('/api/admin/content/item/publish', async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    const entry = getContentType(type)
+    const adminPath =
+      entry.type.mode === 'singleton'
+        ? entry.defaultAdminPath || 'default'
+        : getOptionalContentPath(req)
+
+    await validateStoredContent(type, adminPath)
+
+    if (publishState.status === 'running') {
+      res.status(409).json({ error: '当前已有发布任务在执行' })
+      return
+    }
+
+    publishState.status = 'running'
+    publishState.message = '正在执行校验、构建与重启'
+    publishState.currentPath = adminPath || null
+    publishState.startedAt = new Date().toISOString()
+    publishState.finishedAt = null
+
+    const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+    const child = spawn(pnpmCommand, ['exec', 'node', './scripts/publish.mjs'], {
+      cwd: workspaceRoot,
+      env: {
+        ...process.env,
+        PROTOME_PUBLISH_PATH: adminPath || `${type}:default`,
+      },
+      stdio: 'pipe',
+    })
+
+    let stderr = ''
+    let stdout = ''
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString()
+      stdout += text
+      process.stdout.write(`[publish] ${text}`)
+    })
+
+    child.stderr.on('data', (chunk) => {
+      const text = chunk.toString()
+      stderr += text
+      process.stderr.write(`[publish] ${text}`)
+    })
+
+    child.on('exit', (code) => {
+      publishState.finishedAt = new Date().toISOString()
+      if (code === 0) {
+        publishState.status = 'success'
+        publishState.message = '发布完成'
+        return
+      }
+
+      publishState.status = 'failed'
+      publishState.message = stderr.trim() || stdout.trim() || '发布失败'
+    })
+
+    res.status(202).json({ publish: publishState })
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '发布触发失败' })
   }

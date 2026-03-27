@@ -17,6 +17,7 @@ if (fs.existsSync(rootEnvLocalPath)) {
 export const dataRoot = path.join(workspaceRoot, 'data')
 export const blogRoot = path.join(dataRoot, 'blog')
 export const publicRoot = path.join(workspaceRoot, 'public')
+export const imagesRoot = path.join(publicRoot, 'static', 'images')
 export const postsImageRoot = path.join(publicRoot, 'static', 'images', 'posts')
 export const isProduction = process.env.NODE_ENV === 'production'
 export const defaultDevAdminKey = 'protome-local-dev-key'
