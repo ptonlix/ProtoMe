@@ -29,6 +29,8 @@ const MdxCodeEditor = dynamic(() => import('./MdxCodeEditor'), {
 const inputClassName =
   'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500/30 dark:focus:ring-sky-500/10'
 
+const PUBLISH_SUCCESS_VISIBLE_MS = 8000
+
 function formatDateTimeLabel(value: string | null) {
   if (!value) return '暂无记录'
   return new Date(value).toLocaleString('zh-CN', {
@@ -37,6 +39,16 @@ function formatDateTimeLabel(value: string | null) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function normalizePublishState(state: PublishState | null) {
+  if (!state || state.status === 'idle') return null
+  if (state.status !== 'success') return state
+
+  const finishedAt = state.finishedAt ? new Date(state.finishedAt).getTime() : Number.NaN
+  if (Number.isNaN(finishedAt)) return null
+
+  return Date.now() - finishedAt < PUBLISH_SUCCESS_VISIBLE_MS ? state : null
 }
 
 function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
@@ -297,7 +309,7 @@ function ContentEditorInner({
     ])
       .then(([publishResponse, itemResponse]) => {
         if (!active) return
-        setPublishState(publishResponse.publish)
+        setPublishState(normalizePublishState(publishResponse.publish))
 
         if (itemResponse) {
           const nextState = config.fromItem(itemResponse.item)
@@ -326,6 +338,46 @@ function ContentEditorInner({
       active = false
     }
   }, [adminKey, adminPath, config, typeKey])
+
+  useEffect(() => {
+    if (publishState?.status !== 'running') return
+
+    let active = true
+    const intervalId = window.setInterval(async () => {
+      try {
+        const publishResponse = await fetchPublishState(adminKey)
+        if (!active) return
+        setPublishState(normalizePublishState(publishResponse.publish))
+      } catch {
+        if (!active) return
+        window.clearInterval(intervalId)
+      }
+    }, 2000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [adminKey, publishState?.status])
+
+  useEffect(() => {
+    if (publishState?.status !== 'success' || !publishState.finishedAt) return
+
+    const finishedAt = new Date(publishState.finishedAt).getTime()
+    if (Number.isNaN(finishedAt)) {
+      setPublishState(null)
+      return
+    }
+
+    const remainingMs = Math.max(PUBLISH_SUCCESS_VISIBLE_MS - (Date.now() - finishedAt), 0)
+    const timeoutId = window.setTimeout(() => {
+      setPublishState((current) => (current?.status === 'success' ? null : current))
+    }, remainingMs)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [publishState])
 
   const saveContent = (publishAfterSave: boolean) => {
     startTransition(async () => {
@@ -359,7 +411,7 @@ function ContentEditorInner({
             typeKey,
             response.item.adminPath
           )
-          setPublishState(publishResponse.publish)
+          setPublishState(normalizePublishState(publishResponse.publish))
           setInfo(`已触发发布：${publishResponse.publish.message}`)
         }
       } catch (requestError) {
@@ -410,12 +462,6 @@ function ContentEditorInner({
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
-                  <Link
-                    href={`/admin/content/${typeKey}`}
-                    className="transition hover:text-blue-600 dark:hover:text-sky-300"
-                  >
-                    ← 返回{config.navLabel}
-                  </Link>
                   <StatusPill label={statusLabel.label} tone={statusLabel.tone} />
                   <span>{hasUnsavedChanges ? '存在未保存修改' : '内容已同步'}</span>
                   <span>最近保存：{savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}</span>
