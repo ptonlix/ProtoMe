@@ -95,33 +95,28 @@ function PublishBanner({ state }: { state: PublishState | null }) {
   )
 }
 
-function ImmersiveButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+function ImmersiveButton({
+  active,
+  panelOpen,
+  onClick,
+}: {
+  active: boolean
+  panelOpen: boolean
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={active ? '切换字段侧栏' : '进入沉浸编辑模式'}
-      title={active ? '切换字段侧栏' : '进入沉浸编辑模式'}
-      className={`absolute top-5 right-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl border shadow-sm transition ${
+      aria-label={active ? (panelOpen ? '隐藏辅助面板' : '显示辅助面板') : '进入沉浸编辑模式'}
+      title={active ? (panelOpen ? '隐藏辅助面板' : '显示辅助面板') : '进入沉浸编辑模式'}
+      className={`inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-medium transition ${
         active
-          ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-sky-500/30 dark:bg-sky-500/12 dark:text-sky-300 dark:hover:bg-sky-500/18'
-          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-slate-800 dark:bg-slate-950/72 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100'
+          ? 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900'
+          : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900'
       }`}
     >
-      <svg
-        viewBox="0 0 20 20"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        className="h-5 w-5"
-        aria-hidden="true"
-      >
-        <path d="M7.25 3.75h-2a1.5 1.5 0 0 0-1.5 1.5v2" strokeLinecap="round" />
-        <path d="M12.75 3.75h2a1.5 1.5 0 0 1 1.5 1.5v2" strokeLinecap="round" />
-        <path d="M16.25 12.75v2a1.5 1.5 0 0 1-1.5 1.5h-2" strokeLinecap="round" />
-        <path d="M7.25 16.25h-2a1.5 1.5 0 0 1-1.5-1.5v-2" strokeLinecap="round" />
-        <path d="M6.75 6.75h6.5v6.5h-6.5z" />
-      </svg>
+      {active ? (panelOpen ? '隐藏侧栏' : '显示侧栏') : '沉浸编辑'}
     </button>
   )
 }
@@ -613,12 +608,6 @@ function ContentEditorInner({
         immersive ? 'min-h-full border-slate-300/80 shadow-2xl dark:border-slate-700' : ''
       }`}
     >
-      <ImmersiveButton
-        active={immersive}
-        onClick={() =>
-          immersive ? setImmersiveSidebarOpen((current) => !current) : openImmersive()
-        }
-      />
       <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0 flex-1 space-y-3">
@@ -647,7 +636,14 @@ function ContentEditorInner({
             </p>
           </div>
 
-          <div className="flex shrink-0 flex-wrap items-center gap-2 pr-16">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <ImmersiveButton
+              active={immersive}
+              panelOpen={immersiveSidebarOpen}
+              onClick={() =>
+                immersive ? setImmersiveSidebarOpen((current) => !current) : openImmersive()
+              }
+            />
             {previewHref ? (
               <Link
                 href={previewHref}
@@ -793,56 +789,6 @@ function ContentEditorInner({
                     </button>
                   </div>
                   <div className="space-y-5">{renderSidebar(true)}</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="fixed inset-x-4 bottom-4 z-30 sm:inset-x-6">
-              <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-[1.6rem] border border-slate-200 bg-white/92 px-4 py-3 shadow-2xl backdrop-blur dark:border-slate-800 dark:bg-slate-950/88">
-                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                  <StatusPill label={statusLabel.label} tone={statusLabel.tone} />
-                  <span>{hasUnsavedChanges ? '存在未保存修改' : '内容已同步'}</span>
-                  <span>字数 {bodyWordCount}</span>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setImmersiveSidebarOpen((current) => !current)}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
-                  >
-                    {immersiveSidebarOpen ? '隐藏侧栏' : '显示侧栏'}
-                  </button>
-                  {previewHref ? (
-                    <Link
-                      href={previewHref}
-                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
-                    >
-                      前台预览
-                    </Link>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => saveContent(false)}
-                    disabled={isPending || loading}
-                    className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    {isPending ? '保存中...' : '保存'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => saveContent(true)}
-                    disabled={isPending || loading}
-                    className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
-                  >
-                    保存并发布
-                  </button>
-                  <button
-                    type="button"
-                    onClick={closeImmersive}
-                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
-                  >
-                    退出沉浸
-                  </button>
                 </div>
               </div>
             </div>
