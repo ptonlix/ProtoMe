@@ -12,7 +12,7 @@ const adminApiBaseUrl =
   process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL?.replace(/\/$/, '') || 'http://localhost:4100'
 
 type RequestOptions = {
-  method?: 'GET' | 'POST' | 'PUT'
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
   adminKey: string
 }
@@ -106,6 +106,22 @@ export async function updateContentItem(
   })
 }
 
+export async function deleteContentItem(adminKey: string, type: ContentTypeKey, adminPath: string) {
+  const params = new URLSearchParams({ type, path: adminPath })
+  return request<{
+    result: {
+      type: ContentTypeKey
+      adminPath: string
+      filePath: string
+      assetDir: string | null
+      requiresPublish: boolean
+    }
+  }>(`/api/admin/content/item?${params.toString()}`, {
+    method: 'DELETE',
+    adminKey,
+  })
+}
+
 export async function publishContentItem(
   adminKey: string,
   type: ContentTypeKey,
@@ -128,6 +144,14 @@ export async function publishContentItem(
 
 export async function fetchPublishState(adminKey: string) {
   return request<{ publish: PublishState }>('/api/admin/publish-status', { adminKey })
+}
+
+export async function publishAllContent(adminKey: string) {
+  return request<{ publish: PublishState }>('/api/admin/publish', {
+    method: 'POST',
+    body: {},
+    adminKey,
+  })
 }
 
 export async function uploadContentAsset(

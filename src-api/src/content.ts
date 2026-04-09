@@ -134,6 +134,14 @@ export type AdminContentRecord = {
   }
 }
 
+export type DeleteContentResult = {
+  type: ContentTypeKey
+  adminPath: string
+  filePath: string
+  assetDir: string | null
+  requiresPublish: boolean
+}
+
 type ListContentOptions = {
   type: ContentTypeKey
   keyword?: string
@@ -1221,6 +1229,78 @@ export async function updateContent(
   await fs.mkdir(path.dirname(filePath), { recursive: true })
   await fs.writeFile(filePath, entry.stringify(validated), 'utf8')
   return readContent(type, resolvedAdminPath)
+}
+
+async function removeIfExists(targetPath: string) {
+  try {
+    await fs.access(targetPath)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return false
+    }
+    throw error
+  }
+
+  await fs.rm(targetPath, { recursive: true, force: true })
+  return true
+}
+
+async function cleanupEmptyDirectories(startDir: string, stopDir: string) {
+  let currentDir = path.resolve(startDir)
+  const normalizedStopDir = path.resolve(stopDir)
+
+  while (currentDir.startsWith(`${normalizedStopDir}${path.sep}`)) {
+    try {
+      const entries = await fs.readdir(currentDir)
+      if (entries.length > 0) {
+        return
+      }
+      await fs.rmdir(currentDir)
+    } catch (error) {
+      const errorCode = (error as NodeJS.ErrnoException).code
+      if (errorCode === 'ENOENT' || errorCode === 'ENOTEMPTY') {
+        return
+      }
+      throw error
+    }
+
+    currentDir = path.dirname(currentDir)
+  }
+}
+
+export async function deleteContent(
+  type: ContentTypeKey,
+  adminPath: string | undefined
+): Promise<DeleteContentResult> {
+  const entry = getContentType(type)
+  if (entry.type.mode === 'singleton') {
+    throw new Error(`${entry.type.label} 为单例内容，不支持删除`)
+  }
+
+  const resolvedAdminPath = normalizeAdminPath(adminPath || '', `${entry.type.label} 路径`)
+  const content = await readContent(type, resolvedAdminPath)
+  const filePath = entry.filePathFromAdminPath(resolvedAdminPath)
+  const assetDir = imageDirFromContent(type, content)
+
+  await fs.access(filePath)
+  await fs.unlink(filePath)
+  await cleanupEmptyDirectories(path.dirname(filePath), entry.rootDir)
+
+  const removedAssetDir = (await removeIfExists(assetDir)) ? assetDir : null
+  if (removedAssetDir) {
+    await cleanupEmptyDirectories(
+      path.dirname(removedAssetDir),
+      type === 'blog' ? postsImageRoot : imagesRoot
+    )
+  }
+
+  return {
+    type,
+    adminPath: resolvedAdminPath,
+    filePath,
+    assetDir: removedAssetDir,
+    requiresPublish: true,
+  }
 }
 
 export async function validateStoredContent(type: ContentTypeKey, adminPath?: string) {

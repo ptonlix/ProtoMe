@@ -1,19 +1,101 @@
+'use client'
+
 import Link from 'next/link'
+import { useEffect, useState, useTransition } from 'react'
 import Logo from '@/data/logo.svg'
+import { fetchPublishState, publishAllContent } from './api'
+import type { PublishState } from './types'
+
+function formatPublishLabel(state: PublishState | null) {
+  if (!state || state.status === 'idle') {
+    return '尚未触发'
+  }
+
+  if (state.status === 'running') {
+    return '发布中'
+  }
+
+  if (state.status === 'success') {
+    return '最近成功'
+  }
+
+  return '发布失败'
+}
 
 export default function AdminShell({
+  adminKey,
   title,
   description,
   onLogout,
   immersive = false,
   children,
 }: {
+  adminKey?: string
   title: string
   description: string
   onLogout?: () => void
   immersive?: boolean
   children: React.ReactNode
 }) {
+  const [publishState, setPublishState] = useState<PublishState | null>(null)
+  const [publishError, setPublishError] = useState('')
+  const [isPending, startTransition] = useTransition()
+
+  useEffect(() => {
+    if (!adminKey || immersive) return
+
+    let active = true
+    fetchPublishState(adminKey)
+      .then((response) => {
+        if (!active) return
+        setPublishState(response.publish)
+      })
+      .catch((error) => {
+        if (!active) return
+        setPublishError(error instanceof Error ? error.message : '发布状态读取失败')
+      })
+
+    return () => {
+      active = false
+    }
+  }, [adminKey, immersive])
+
+  useEffect(() => {
+    if (!adminKey || immersive || publishState?.status !== 'running') return
+
+    let active = true
+    const intervalId = window.setInterval(async () => {
+      try {
+        const response = await fetchPublishState(adminKey)
+        if (!active) return
+        setPublishState(response.publish)
+      } catch (error) {
+        if (!active) return
+        setPublishError(error instanceof Error ? error.message : '发布状态读取失败')
+        window.clearInterval(intervalId)
+      }
+    }, 2000)
+
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+    }
+  }, [adminKey, immersive, publishState?.status])
+
+  const handlePublishAll = () => {
+    if (!adminKey) return
+
+    startTransition(async () => {
+      try {
+        setPublishError('')
+        const response = await publishAllContent(adminKey)
+        setPublishState(response.publish)
+      } catch (error) {
+        setPublishError(error instanceof Error ? error.message : '统一发布触发失败')
+      }
+    })
+  }
+
   return (
     <div className={immersive ? 'space-y-0' : 'space-y-6'}>
       <div
@@ -55,7 +137,16 @@ export default function AdminShell({
               <span className="rounded-full bg-blue-50 px-3 py-1.5 text-blue-600 dark:bg-sky-500/10 dark:text-sky-300">
                 Editorial Workspace
               </span>
+              {adminKey ? (
+                <span className="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+                  统一发布：{formatPublishLabel(publishState)}
+                </span>
+              ) : null}
             </div>
+
+            {publishError ? (
+              <p className="text-right text-xs text-rose-600 dark:text-rose-300">{publishError}</p>
+            ) : null}
 
             <div className="flex flex-wrap items-center gap-2">
               <Link
@@ -70,6 +161,20 @@ export default function AdminShell({
               >
                 新建文章
               </Link>
+              {adminKey ? (
+                <button
+                  type="button"
+                  onClick={handlePublishAll}
+                  disabled={isPending || publishState?.status === 'running'}
+                  className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-sm font-medium text-emerald-700 transition hover:border-emerald-300 hover:bg-emerald-100 disabled:opacity-60 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/15"
+                >
+                  {publishState?.status === 'running'
+                    ? '统一发布中...'
+                    : isPending
+                      ? '提交中...'
+                      : '统一发布'}
+                </button>
+              ) : null}
               <Link
                 href="/blog"
                 className="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"

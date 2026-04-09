@@ -8,6 +8,7 @@ import AdminShell from './AdminShell'
 import PostPreview from './PostPreview'
 import {
   createContentItem,
+  deleteContentItem,
   fetchContentItem,
   fetchPublishState,
   publishContentItem,
@@ -254,6 +255,7 @@ function ContentEditorInner({
   const [immersive, setImmersive] = useState(false)
   const [immersiveSidebarOpen, setImmersiveSidebarOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const payloadSnapshot = useMemo(
     () => JSON.stringify(config.toPayload(formState)),
@@ -485,6 +487,26 @@ function ContentEditorInner({
     }
   }
 
+  const handleDelete = async () => {
+    if (!resolvedPath) return
+
+    const confirmed = window.confirm(
+      `确认删除“${previewTitle}”吗？\n\n这会同时删除内容文件和该内容关联的资源目录。\n删除后不会自动发布，请稍后统一执行发布。`
+    )
+    if (!confirmed) return
+
+    try {
+      setIsDeleting(true)
+      setError('')
+      setInfo('')
+      await deleteContentItem(adminKey, typeKey, resolvedPath)
+      window.location.assign(`/admin/content/${typeKey}?deleted=1`)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '删除失败')
+      setIsDeleting(false)
+    }
+  }
+
   const fieldList = config.fields.filter((field) => field.key !== config.bodyField)
   const closeImmersive = () => {
     setImmersive(false)
@@ -664,7 +686,7 @@ function ContentEditorInner({
             <button
               type="button"
               onClick={() => saveContent(false)}
-              disabled={isPending || loading}
+              disabled={isPending || isDeleting || loading}
               className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
             >
               {isPending ? '保存中...' : '保存内容'}
@@ -672,11 +694,21 @@ function ContentEditorInner({
             <button
               type="button"
               onClick={() => saveContent(true)}
-              disabled={isPending || loading}
+              disabled={isPending || isDeleting || loading}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
             >
               保存并发布
             </button>
+            {config.mode === 'collection' && resolvedPath ? (
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isPending || isDeleting || loading}
+                className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 transition hover:bg-rose-100 disabled:opacity-60 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20"
+              >
+                {isDeleting ? '删除中...' : '删除内容'}
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -741,6 +773,7 @@ function ContentEditorInner({
 
   return (
     <AdminShell
+      adminKey={adminKey}
       title={resolvedPath ? `编辑 ${config.navLabel}` : config.newLabel}
       description={config.description}
       onLogout={handleLogout}

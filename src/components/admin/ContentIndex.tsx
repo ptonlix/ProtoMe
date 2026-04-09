@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminShell from './AdminShell'
@@ -45,6 +46,7 @@ function ContentIndexInner({
   typeKey: ContentTypeKey
 }) {
   const config = getContentConfig(typeKey)
+  const searchParams = useSearchParams()
   const [items, setItems] = useState<AdminContentItem[]>([])
   const [groups, setGroups] = useState<string[]>([])
   const [selectedGroup, setSelectedGroup] = useState('')
@@ -57,6 +59,7 @@ function ContentIndexInner({
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const deletedFlag = searchParams.get('deleted')
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -103,7 +106,12 @@ function ContentIndexInner({
   }, [adminKey, typeKey, keyword, selectedStatus, selectedGroup, page, pageSize])
 
   return (
-    <AdminShell title={config.label} description={config.description} onLogout={handleLogout}>
+    <AdminShell
+      adminKey={adminKey}
+      title={config.label}
+      description={config.description}
+      onLogout={handleLogout}
+    >
       <div className="rounded-[2rem] border border-slate-200 bg-white/92 shadow-sm dark:border-slate-800 dark:bg-slate-950/72">
         <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
@@ -218,6 +226,11 @@ function ContentIndexInner({
         </div>
 
         {error ? <p className="px-6 py-4 text-sm text-rose-600">{error}</p> : null}
+        {deletedFlag ? (
+          <p className="px-6 py-4 text-sm text-amber-700 dark:text-amber-300">
+            内容与资源目录已删除，当前变更尚未发布，请稍后统一执行发布。
+          </p>
+        ) : null}
         {loading ? <p className="px-6 py-4 text-sm text-slate-500">正在加载内容...</p> : null}
 
         {!loading ? (

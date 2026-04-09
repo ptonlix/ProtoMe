@@ -8,6 +8,7 @@ import { adminOrigin, maxUploadSize, port, resolveAdminKey, workspaceRoot } from
 import {
   createPost,
   createContent,
+  deleteContent,
   getContentType,
   imageDirFromPost,
   imageDirFromContent,
@@ -88,6 +89,56 @@ function getOptionalContentPath(req: express.Request) {
   return raw ? normalizeAdminPath(raw, '内容路径') : undefined
 }
 
+function triggerPublishTask(targetPath: string | null) {
+  if (publishState.status === 'running') {
+    throw new Error('当前已有发布任务在执行')
+  }
+
+  publishState.status = 'running'
+  publishState.message = '正在执行校验、构建与重启'
+  publishState.currentPath = targetPath
+  publishState.startedAt = new Date().toISOString()
+  publishState.finishedAt = null
+
+  const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+  const child = spawn(pnpmCommand, ['exec', 'node', './scripts/publish.mjs'], {
+    cwd: workspaceRoot,
+    env: {
+      ...process.env,
+      PROTOME_PUBLISH_PATH: targetPath || 'all',
+    },
+    stdio: 'pipe',
+  })
+
+  let stderr = ''
+  let stdout = ''
+  child.stdout.on('data', (chunk) => {
+    const text = chunk.toString()
+    stdout += text
+    process.stdout.write(`[publish] ${text}`)
+  })
+
+  child.stderr.on('data', (chunk) => {
+    const text = chunk.toString()
+    stderr += text
+    process.stderr.write(`[publish] ${text}`)
+  })
+
+  child.on('exit', (code) => {
+    publishState.finishedAt = new Date().toISOString()
+    if (code === 0) {
+      publishState.status = 'success'
+      publishState.message = '发布完成'
+      return
+    }
+
+    publishState.status = 'failed'
+    publishState.message = stderr.trim() || stdout.trim() || '发布失败'
+  })
+
+  return publishState
+}
+
 function safeFileName(originalName: string) {
   const extension = path.extname(originalName).toLowerCase()
   const baseName = path.basename(originalName, extension)
@@ -166,6 +217,21 @@ app.put('/api/admin/content/item', async (req, res) => {
     res.json({ item })
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '内容更新失败' })
+  }
+})
+
+app.delete('/api/admin/content/item', async (req, res) => {
+  try {
+    const type = getContentTypeKey(req)
+    const entry = getContentType(type)
+    if (entry.type.mode === 'singleton') {
+      throw new Error('单例内容不支持删除')
+    }
+
+    const result = await deleteContent(type, getOptionalContentPath(req))
+    res.json({ result })
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : '内容删除失败' })
   }
 })
 
@@ -315,61 +381,21 @@ app.get('/api/admin/publish-status', (_req, res) => {
   res.json({ publish: publishState })
 })
 
+app.post('/api/admin/publish', (_req, res) => {
+  try {
+    const publish = triggerPublishTask(null)
+    res.status(202).json({ publish })
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : '统一发布触发失败' })
+  }
+})
+
 app.post('/api/admin/post/publish', async (req, res) => {
   try {
     const adminPath = getAdminPath(req)
     await validateStoredPost(adminPath)
-
-    if (publishState.status === 'running') {
-      res.status(409).json({ error: '当前已有发布任务在执行' })
-      return
-    }
-
-    publishState.status = 'running'
-    publishState.message = '正在执行校验、构建与重启'
-    publishState.currentPath = adminPath
-    publishState.startedAt = new Date().toISOString()
-    publishState.finishedAt = null
-
-    const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-    const child = spawn(pnpmCommand, ['exec', 'node', './scripts/publish.mjs'], {
-      cwd: workspaceRoot,
-      env: {
-        ...process.env,
-        PROTOME_PUBLISH_PATH: adminPath,
-      },
-      stdio: 'pipe',
-    })
-
-    let stderr = ''
-    let stdout = ''
-    child.stdout.on('data', (chunk) => {
-      const text = chunk.toString()
-      stdout += text
-      process.stdout.write(`[publish] ${text}`)
-    })
-
-    child.stderr.on('data', (chunk) => {
-      const text = chunk.toString()
-      stderr += text
-      process.stderr.write(`[publish] ${text}`)
-    })
-
-    child.on('exit', (code) => {
-      publishState.finishedAt = new Date().toISOString()
-      if (code === 0) {
-        publishState.status = 'success'
-        publishState.message = '发布完成'
-        return
-      }
-
-      publishState.status = 'failed'
-      publishState.message = stderr.trim() || stdout.trim() || '发布失败'
-    })
-
-    res.status(202).json({
-      publish: publishState,
-    })
+    const publish = triggerPublishTask(adminPath)
+    res.status(202).json({ publish })
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '发布触发失败' })
   }
@@ -385,55 +411,8 @@ app.post('/api/admin/content/item/publish', async (req, res) => {
         : getOptionalContentPath(req)
 
     await validateStoredContent(type, adminPath)
-
-    if (publishState.status === 'running') {
-      res.status(409).json({ error: '当前已有发布任务在执行' })
-      return
-    }
-
-    publishState.status = 'running'
-    publishState.message = '正在执行校验、构建与重启'
-    publishState.currentPath = adminPath || null
-    publishState.startedAt = new Date().toISOString()
-    publishState.finishedAt = null
-
-    const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
-    const child = spawn(pnpmCommand, ['exec', 'node', './scripts/publish.mjs'], {
-      cwd: workspaceRoot,
-      env: {
-        ...process.env,
-        PROTOME_PUBLISH_PATH: adminPath || `${type}:default`,
-      },
-      stdio: 'pipe',
-    })
-
-    let stderr = ''
-    let stdout = ''
-    child.stdout.on('data', (chunk) => {
-      const text = chunk.toString()
-      stdout += text
-      process.stdout.write(`[publish] ${text}`)
-    })
-
-    child.stderr.on('data', (chunk) => {
-      const text = chunk.toString()
-      stderr += text
-      process.stderr.write(`[publish] ${text}`)
-    })
-
-    child.on('exit', (code) => {
-      publishState.finishedAt = new Date().toISOString()
-      if (code === 0) {
-        publishState.status = 'success'
-        publishState.message = '发布完成'
-        return
-      }
-
-      publishState.status = 'failed'
-      publishState.message = stderr.trim() || stdout.trim() || '发布失败'
-    })
-
-    res.status(202).json({ publish: publishState })
+    const publish = triggerPublishTask(adminPath || `${type}:default`)
+    res.status(202).json({ publish })
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : '发布触发失败' })
   }

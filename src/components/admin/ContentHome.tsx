@@ -8,8 +8,9 @@ import { contentTypeOrder, getContentConfig } from './content-config'
 export default function ContentHome() {
   return (
     <AdminAuthGate>
-      {(_adminKey, handleLogout) => (
+      {(adminKey, handleLogout) => (
         <AdminShell
+          adminKey={adminKey}
           title="统一内容后台"
           description="在同一套工作台中管理 Blog、Profile、Projects、Authors、Worklogs 和 About。"
           onLogout={handleLogout}
