@@ -95,6 +95,37 @@ function PublishBanner({ state }: { state: PublishState | null }) {
   )
 }
 
+function ImmersiveButton({ active, onClick }: { active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={active ? '切换字段侧栏' : '进入沉浸编辑模式'}
+      title={active ? '切换字段侧栏' : '进入沉浸编辑模式'}
+      className={`absolute top-5 right-5 inline-flex h-11 w-11 items-center justify-center rounded-2xl border shadow-sm transition ${
+        active
+          ? 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100 dark:border-sky-500/30 dark:bg-sky-500/12 dark:text-sky-300 dark:hover:bg-sky-500/18'
+          : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-800 dark:border-slate-800 dark:bg-slate-950/72 dark:text-slate-400 dark:hover:border-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-100'
+      }`}
+    >
+      <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        className="h-5 w-5"
+        aria-hidden="true"
+      >
+        <path d="M7.25 3.75h-2a1.5 1.5 0 0 0-1.5 1.5v2" strokeLinecap="round" />
+        <path d="M12.75 3.75h2a1.5 1.5 0 0 1 1.5 1.5v2" strokeLinecap="round" />
+        <path d="M16.25 12.75v2a1.5 1.5 0 0 1-1.5 1.5h-2" strokeLinecap="round" />
+        <path d="M7.25 16.25h-2a1.5 1.5 0 0 1-1.5-1.5v-2" strokeLinecap="round" />
+        <path d="M6.75 6.75h6.5v6.5h-6.5z" />
+      </svg>
+    </button>
+  )
+}
+
 function renderField(
   field: ContentFieldConfig,
   state: ContentFormState,
@@ -225,6 +256,8 @@ function ContentEditorInner({
     JSON.stringify(config.toPayload(config.createInitialState()))
   )
   const [editorView, setEditorView] = useState<'split' | 'editor' | 'preview'>('split')
+  const [immersive, setImmersive] = useState(false)
+  const [immersiveSidebarOpen, setImmersiveSidebarOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const payloadSnapshot = useMemo(
@@ -379,6 +412,26 @@ function ContentEditorInner({
     }
   }, [publishState])
 
+  useEffect(() => {
+    if (!immersive) return
+
+    document.body.classList.add('admin-immersive')
+    setImmersiveSidebarOpen(true)
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setImmersive(false)
+        setImmersiveSidebarOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.classList.remove('admin-immersive')
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [immersive])
+
   const saveContent = (publishAfterSave: boolean) => {
     startTransition(async () => {
       try {
@@ -438,231 +491,382 @@ function ContentEditorInner({
   }
 
   const fieldList = config.fields.filter((field) => field.key !== config.bodyField)
+  const closeImmersive = () => {
+    setImmersive(false)
+    setImmersiveSidebarOpen(false)
+  }
+  const openImmersive = () => {
+    setImmersive(true)
+    setImmersiveSidebarOpen(true)
+  }
+  const renderSidebar = (compact = false) => (
+    <>
+      <section
+        className={`rounded-[1.6rem] border border-slate-200 bg-white/96 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/72 ${
+          compact ? 'backdrop-blur' : ''
+        }`}
+      >
+        <div className="mb-4 space-y-1.5">
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100">发布状态</div>
+          <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+            保存、发布和当前状态都会集中显示在这里。
+          </p>
+        </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
+              <p className="text-[11px] tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
+                状态
+              </p>
+              <p className="mt-2 font-semibold text-slate-700 dark:text-slate-200">
+                {statusLabel.label}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
+              <p className="text-[11px] tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
+                正文
+              </p>
+              <p className="mt-2 font-semibold text-slate-700 dark:text-slate-200">
+                {bodyWordCount} 词
+              </p>
+            </div>
+          </div>
+          <PublishBanner state={publishState} />
+        </div>
+      </section>
+
+      <section
+        className={`rounded-[1.6rem] border border-slate-200 bg-white/96 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/72 ${
+          compact ? 'backdrop-blur' : ''
+        }`}
+      >
+        <div className="mb-4 space-y-1.5">
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100">字段设置</div>
+          <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+            当前内容类型的结构化字段统一维护在这里。
+          </p>
+        </div>
+        <div className="space-y-4">
+          {fieldList.map((field) => (
+            <label key={field.key} className="block space-y-1.5">
+              <span className="flex items-center justify-between gap-3">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                  {field.label}
+                </span>
+                {field.hint ? (
+                  <span className="text-xs text-slate-400 dark:text-slate-500">{field.hint}</span>
+                ) : null}
+              </span>
+              {renderField(
+                field,
+                formState,
+                setFormState,
+                Boolean(resolvedPath) && ['slug', 'pathSlug'].includes(field.key)
+              )}
+            </label>
+          ))}
+        </div>
+      </section>
+
+      {config.supportsAssets ? (
+        <section
+          className={`rounded-[1.6rem] border border-slate-200 bg-white/96 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/72 ${
+            compact ? 'backdrop-blur' : ''
+          }`}
+        >
+          <div className="mb-4 space-y-1.5">
+            <div className="text-sm font-bold text-slate-800 dark:text-slate-100">资源上传</div>
+            <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+              首次新建内容请先保存，再上传资源文件。
+            </p>
+          </div>
+          <div className="space-y-4">
+            <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/10">
+              <span className="text-2xl">⤴</span>
+              <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                拖拽或点击上传图片资源
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => handleUpload(event.target.files?.[0] || null)}
+                className="hidden"
+              />
+            </label>
+
+            {assetSnippet ? (
+              <textarea
+                readOnly
+                value={assetSnippet}
+                rows={4}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+              />
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+    </>
+  )
+  const editorSection = (
+    <section
+      className={`relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/72 ${
+        immersive ? 'min-h-full border-slate-300/80 shadow-2xl dark:border-slate-700' : ''
+      }`}
+    >
+      <ImmersiveButton
+        active={immersive}
+        onClick={() =>
+          immersive ? setImmersiveSidebarOpen((current) => !current) : openImmersive()
+        }
+      />
+      <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="min-w-0 flex-1 space-y-3">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+              <StatusPill label={statusLabel.label} tone={statusLabel.tone} />
+              <span>{hasUnsavedChanges ? '存在未保存修改' : '内容已同步'}</span>
+              <span>最近保存：{savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}</span>
+              {immersive ? <span className="text-xs">Esc 退出沉浸模式</span> : null}
+            </div>
+            <input
+              value={String(formState[config.titleField] ?? '')}
+              onChange={(event) =>
+                setFormState((current) => ({
+                  ...current,
+                  [config.titleField]: event.target.value,
+                }))
+              }
+              className="w-full min-w-0 border-none bg-transparent p-0 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300 dark:text-slate-50 dark:placeholder:text-slate-700"
+              placeholder={`输入${config.navLabel}标题...`}
+            />
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              当前文件预计写入到
+              <span className="ml-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                {draftPath}
+              </span>
+            </p>
+          </div>
+
+          <div className="flex shrink-0 flex-wrap items-center gap-2 pr-16">
+            {previewHref ? (
+              <Link
+                href={previewHref}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                前台预览
+              </Link>
+            ) : null}
+            {immersive ? (
+              <button
+                type="button"
+                onClick={closeImmersive}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+              >
+                退出沉浸
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => saveContent(false)}
+              disabled={isPending || loading}
+              className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+            >
+              {isPending ? '保存中...' : '保存内容'}
+            </button>
+            <button
+              type="button"
+              onClick={() => saveContent(true)}
+              disabled={isPending || loading}
+              className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
+            >
+              保存并发布
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="px-6 py-8 text-sm text-slate-500 dark:text-slate-400">正在加载内容...</div>
+      ) : (
+        <>
+          <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+            <div className="flex items-center gap-2 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800">
+              {(['split', 'editor', 'preview'] as const).map((view) => (
+                <button
+                  key={view}
+                  type="button"
+                  onClick={() => setEditorView(view)}
+                  className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
+                    editorView === view
+                      ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-950 dark:text-sky-300'
+                      : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
+                  }`}
+                >
+                  {view === 'split' ? '双栏' : view === 'editor' ? '编辑' : '预览'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className={`grid ${
+              immersive
+                ? `min-h-[56vh] xl:h-[calc(100vh-18rem)] xl:min-h-[42rem] ${
+                    editorView === 'split' ? 'xl:grid-cols-2' : 'grid-cols-1'
+                  }`
+                : `min-h-[34rem] ${editorView === 'split' ? 'xl:grid-cols-2' : 'grid-cols-1'}`
+            }`}
+          >
+            <div
+              className={`${editorView === 'preview' ? 'hidden' : ''} min-h-[24rem] overflow-hidden border-b border-slate-200 xl:border-r xl:border-b-0 dark:border-slate-800`}
+            >
+              <MdxCodeEditor
+                value={body}
+                onChange={(value) =>
+                  setFormState((current) => ({
+                    ...current,
+                    [config.bodyField]: value,
+                  }))
+                }
+                placeholder="在这里开始输入 Markdown 或 MDX 正文..."
+                immersive={immersive}
+              />
+            </div>
+            <div
+              className={`${editorView === 'editor' ? 'hidden' : ''} min-h-[24rem] overflow-hidden`}
+            >
+              <PostPreview title={previewTitle} summary={previewSummary} body={body} />
+            </div>
+          </div>
+        </>
+      )}
+    </section>
+  )
 
   return (
     <AdminShell
       title={resolvedPath ? `编辑 ${config.navLabel}` : config.newLabel}
       description={config.description}
       onLogout={handleLogout}
+      immersive={immersive}
     >
-      {error ? (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
-          {error}
-        </div>
-      ) : null}
-      {info ? (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
-          {info}
-        </div>
-      ) : null}
+      {immersive ? (
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-y-contain bg-slate-100/95 px-4 py-4 backdrop-blur-md sm:px-6 sm:py-6 dark:bg-slate-950/94">
+          <div className="mx-auto min-h-full max-w-[1800px] pb-28">
+            {error ? (
+              <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+                {error}
+              </div>
+            ) : null}
+            {info ? (
+              <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+                {info}
+              </div>
+            ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950/72">
-          <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 dark:text-slate-400">
+            <div className="relative">
+              {editorSection}
+
+              <div
+                className={`fixed inset-y-4 right-4 z-20 w-[min(26rem,calc(100vw-2rem))] transform transition duration-200 sm:right-6 ${
+                  immersiveSidebarOpen
+                    ? 'translate-x-0 opacity-100'
+                    : 'pointer-events-none translate-x-[110%] opacity-0'
+                }`}
+              >
+                <div className="admin-scrollbar h-full overflow-y-auto rounded-[2rem] border border-slate-200 bg-white/96 p-4 shadow-2xl backdrop-blur dark:border-slate-800 dark:bg-slate-950/88">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
+                        Sidebar
+                      </p>
+                      <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                        编辑辅助面板
+                      </h2>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setImmersiveSidebarOpen(false)}
+                      className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+                    >
+                      收起
+                    </button>
+                  </div>
+                  <div className="space-y-5">{renderSidebar(true)}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="fixed inset-x-4 bottom-4 z-30 sm:inset-x-6">
+              <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 rounded-[1.6rem] border border-slate-200 bg-white/92 px-4 py-3 shadow-2xl backdrop-blur dark:border-slate-800 dark:bg-slate-950/88">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                   <StatusPill label={statusLabel.label} tone={statusLabel.tone} />
                   <span>{hasUnsavedChanges ? '存在未保存修改' : '内容已同步'}</span>
-                  <span>最近保存：{savedAt ? formatDateTimeLabel(savedAt) : '尚未保存'}</span>
+                  <span>字数 {bodyWordCount}</span>
                 </div>
-                <input
-                  value={String(formState[config.titleField] ?? '')}
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      [config.titleField]: event.target.value,
-                    }))
-                  }
-                  className="w-full border-none bg-transparent p-0 text-3xl font-bold text-slate-900 outline-none placeholder:text-slate-300 dark:text-slate-50 dark:placeholder:text-slate-700"
-                  placeholder={`输入${config.navLabel}标题...`}
-                />
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  当前文件预计写入到
-                  <span className="ml-2 rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                    {draftPath}
-                  </span>
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {previewHref ? (
-                  <Link
-                    href={previewHref}
-                    className="inline-flex items-center justify-center rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setImmersiveSidebarOpen((current) => !current)}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
                   >
-                    前台预览
-                  </Link>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => saveContent(false)}
-                  disabled={isPending || loading}
-                  className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  {isPending ? '保存中...' : '保存内容'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => saveContent(true)}
-                  disabled={isPending || loading}
-                  className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
-                >
-                  保存并发布
-                </button>
+                    {immersiveSidebarOpen ? '隐藏侧栏' : '显示侧栏'}
+                  </button>
+                  {previewHref ? (
+                    <Link
+                      href={previewHref}
+                      className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+                    >
+                      前台预览
+                    </Link>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => saveContent(false)}
+                    disabled={isPending || loading}
+                    className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    {isPending ? '保存中...' : '保存'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => saveContent(true)}
+                    disabled={isPending || loading}
+                    className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
+                  >
+                    保存并发布
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closeImmersive}
+                    className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+                  >
+                    退出沉浸
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-
-          {loading ? (
-            <div className="px-6 py-8 text-sm text-slate-500 dark:text-slate-400">
-              正在加载内容...
+        </div>
+      ) : (
+        <>
+          {error ? (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200">
+              {error}
             </div>
-          ) : (
-            <>
-              <div className="border-b border-slate-200 px-4 py-3 dark:border-slate-800">
-                <div className="flex items-center gap-2 rounded-xl bg-slate-200/70 p-1 dark:bg-slate-800">
-                  {(['split', 'editor', 'preview'] as const).map((view) => (
-                    <button
-                      key={view}
-                      type="button"
-                      onClick={() => setEditorView(view)}
-                      className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition ${
-                        editorView === view
-                          ? 'bg-white text-blue-600 shadow-sm dark:bg-slate-950 dark:text-sky-300'
-                          : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'
-                      }`}
-                    >
-                      {view === 'split' ? '双栏' : view === 'editor' ? '编辑' : '预览'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div
-                className={`grid min-h-[34rem] ${editorView === 'split' ? 'xl:grid-cols-2' : 'grid-cols-1'}`}
-              >
-                <div
-                  className={`${editorView === 'preview' ? 'hidden' : ''} min-h-[24rem] overflow-hidden border-b border-slate-200 xl:border-r xl:border-b-0 dark:border-slate-800`}
-                >
-                  <MdxCodeEditor
-                    value={body}
-                    onChange={(value) =>
-                      setFormState((current) => ({
-                        ...current,
-                        [config.bodyField]: value,
-                      }))
-                    }
-                    placeholder="在这里开始输入 Markdown 或 MDX 正文..."
-                  />
-                </div>
-                <div
-                  className={`${editorView === 'editor' ? 'hidden' : ''} min-h-[24rem] overflow-hidden`}
-                >
-                  <PostPreview title={previewTitle} summary={previewSummary} body={body} />
-                </div>
-              </div>
-            </>
-          )}
-        </section>
-
-        <aside className="space-y-5">
-          <section className="rounded-[1.6rem] border border-slate-200 bg-white/96 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/72">
-            <div className="mb-4 space-y-1.5">
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100">发布状态</div>
-              <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-                保存、发布和当前状态都会集中显示在这里。
-              </p>
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
-                  <p className="text-[11px] tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
-                    状态
-                  </p>
-                  <p className="mt-2 font-semibold text-slate-700 dark:text-slate-200">
-                    {statusLabel.label}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900">
-                  <p className="text-[11px] tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">
-                    正文
-                  </p>
-                  <p className="mt-2 font-semibold text-slate-700 dark:text-slate-200">
-                    {bodyWordCount} 词
-                  </p>
-                </div>
-              </div>
-              <PublishBanner state={publishState} />
-            </div>
-          </section>
-
-          <section className="rounded-[1.6rem] border border-slate-200 bg-white/96 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/72">
-            <div className="mb-4 space-y-1.5">
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100">字段设置</div>
-              <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-                当前内容类型的结构化字段统一维护在这里。
-              </p>
-            </div>
-            <div className="space-y-4">
-              {fieldList.map((field) => (
-                <label key={field.key} className="block space-y-1.5">
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                      {field.label}
-                    </span>
-                    {field.hint ? (
-                      <span className="text-xs text-slate-400 dark:text-slate-500">
-                        {field.hint}
-                      </span>
-                    ) : null}
-                  </span>
-                  {renderField(
-                    field,
-                    formState,
-                    setFormState,
-                    Boolean(resolvedPath) && ['slug', 'pathSlug'].includes(field.key)
-                  )}
-                </label>
-              ))}
-            </div>
-          </section>
-
-          {config.supportsAssets ? (
-            <section className="rounded-[1.6rem] border border-slate-200 bg-white/96 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950/72">
-              <div className="mb-4 space-y-1.5">
-                <div className="text-sm font-bold text-slate-800 dark:text-slate-100">资源上传</div>
-                <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-                  首次新建内容请先保存，再上传资源文件。
-                </p>
-              </div>
-              <div className="space-y-4">
-                <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 bg-white px-4 py-5 text-center transition hover:border-blue-200 hover:bg-blue-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:border-sky-500/30 dark:hover:bg-sky-500/10">
-                  <span className="text-2xl">⤴</span>
-                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
-                    拖拽或点击上传图片资源
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(event) => handleUpload(event.target.files?.[0] || null)}
-                    className="hidden"
-                  />
-                </label>
-
-                {assetSnippet ? (
-                  <textarea
-                    readOnly
-                    value={assetSnippet}
-                    rows={4}
-                    className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-                  />
-                ) : null}
-              </div>
-            </section>
           ) : null}
-        </aside>
-      </div>
+          {info ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200">
+              {info}
+            </div>
+          ) : null}
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+            {editorSection}
+            <aside className="space-y-5">{renderSidebar()}</aside>
+          </div>
+        </>
+      )}
     </AdminShell>
   )
 }
