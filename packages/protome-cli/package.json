@@ -1,0 +1,24 @@
+{
+  "name": "protome-cli",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "pm": "dist/index.js"
+  },
+  "scripts": {
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json",
+    "lint": "pnpm exec eslint \"src/**/*.ts\" --fix",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "pnpm run build",
+    "pack": "pnpm pack",
+    "publish:package": "pnpm publish --access public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^24.5.2"
+  }
+}

@@ -5,14 +5,23 @@
   "scripts": {
     "dev": "pnpm --filter protome-web dev",
     "dev:api": "pnpm --filter protome-api dev",
+    "dev:profile-api": "pnpm --filter protome-profile-api dev",
+    "dev:workspace": "concurrently \"pnpm dev\" \"pnpm dev:api\"",
     "dev:all": "concurrently \"pnpm dev\" \"pnpm dev:api\"",
     "build": "pnpm --filter protome-web build",
     "build:api": "pnpm --filter protome-api build",
-    "build:all": "pnpm build && pnpm build:api",
+    "build:profile-api": "pnpm --filter protome-profile-api build",
+    "build:cli": "pnpm --filter protome-cli build",
+    "build:snapshots": "node ./scripts/build-snapshots.mjs",
+    "build:cloud": "pnpm build && pnpm build:profile-api && pnpm build:snapshots",
+    "build:workspace": "pnpm build && pnpm build:api",
+    "build:all": "pnpm build && pnpm build:api && pnpm build:profile-api && pnpm build:cli",
     "serve": "pnpm --filter protome-web serve",
     "serve:api": "pnpm --filter protome-api start",
-    "lint": "pnpm --filter protome-web lint && pnpm --filter protome-api lint",
-    "typecheck": "pnpm --filter protome-web typecheck && pnpm --filter protome-api typecheck",
+    "serve:profile-api": "pnpm --filter protome-profile-api start",
+    "serve:cloud": "node ./scripts/start-cloud.mjs",
+    "lint": "pnpm --filter protome-web lint && pnpm --filter protome-api lint && pnpm --filter protome-profile-api lint && pnpm --filter protome-cli lint",
+    "typecheck": "pnpm --filter protome-web typecheck && pnpm --filter protome-api typecheck && pnpm --filter protome-profile-api typecheck && pnpm --filter protome-cli typecheck",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -41,6 +50,12 @@
     ],
     "src-api/**/*.+(js|jsx|ts|tsx)": [
       "pnpm --dir src-api exec eslint --fix"
+    ],
+    "src-profile-api/**/*.+(js|jsx|ts|tsx)": [
+      "pnpm --dir src-profile-api exec eslint --fix"
+    ],
+    "packages/**/*.+(js|jsx|ts|tsx)": [
+      "pnpm --dir packages/protome-cli exec eslint --fix"
     ],
     "*.+(js|jsx|ts|tsx|json|css|md|mdx)": [
       "pnpm exec prettier --write"

@@ -13,7 +13,6 @@
 /out/
 /src/.next/
 /src/out/
-/src/.next-prod/
 public/sitemap.xml
 .vercel
 
@@ -55,6 +54,12 @@ pnpm-debug.log*
 # API 构建产物
 /src-api/dist
 /src-api/node_modules
+/src-profile-api/dist
+/src-profile-api/node_modules
+/packages/protome-cli/dist
+/packages/protome-cli/node_modules
+/deploy/snapshots/*.json
+/protome-cli-*.tgz
 
 # TypeScript 增量编译缓存
 /src/tsconfig.tsbuildinfo

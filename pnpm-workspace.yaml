@@ -1,3 +1,5 @@
 packages:
   - 'src'
   - 'src-api'
+  - 'src-profile-api'
+  - 'packages/*'

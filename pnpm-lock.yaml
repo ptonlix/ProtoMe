@@ -63,6 +63,12 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/protome-cli:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.12.0
+
   src:
     dependencies:
       '@codemirror/lang-markdown':
@@ -229,6 +235,34 @@ importers:
       '@types/multer':
         specifier: ^2.0.0
         version: 2.1.0
+      '@types/node':
+        specifier: ^24.5.2
+        version: 24.12.0
+      tsx:
+        specifier: ^4.20.6
+        version: 4.21.0
+
+  src-profile-api:
+    dependencies:
+      cors:
+        specifier: ^2.8.5
+        version: 2.8.6
+      dotenv:
+        specifier: ^17.2.2
+        version: 17.3.1
+      express:
+        specifier: ^5.1.0
+        version: 5.2.1
+      zod:
+        specifier: ^4.1.11
+        version: 4.3.6
+    devDependencies:
+      '@types/cors':
+        specifier: ^2.8.19
+        version: 2.8.19
+      '@types/express':
+        specifier: ^5.0.3
+        version: 5.0.6
       '@types/node':
         specifier: ^24.5.2
         version: 24.12.0

@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "cross-env INIT_CWD=$PWD next dev",
-    "build": "cross-env INIT_CWD=$PWD NEXT_DIST_DIR=.next-prod next build && cross-env NODE_OPTIONS='--experimental-json-modules' node ../scripts/postbuild.mjs",
-    "serve": "cross-env NEXT_DIST_DIR=.next-prod next start",
-    "analyze": "cross-env ANALYZE=true NEXT_DIST_DIR=.next-prod next build",
+    "build": "cross-env INIT_CWD=$PWD next build && cross-env NODE_OPTIONS='--experimental-json-modules' node ../scripts/postbuild.mjs",
+    "serve": "next start",
+    "analyze": "cross-env ANALYZE=true next build",
     "lint": "pnpm exec eslint \"app/**/*.{js,jsx,ts,tsx}\" \"components/**/*.{js,jsx,ts,tsx}\" \"layouts/**/*.{js,jsx,ts,tsx}\" --fix",
     "typecheck": "tsc --noEmit",
     "validate:content": "node ../scripts/validate-content.mjs"
