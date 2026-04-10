@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import AdminAuthGate from './AdminAuthGate'
 import AdminShell from './AdminShell'
@@ -239,6 +240,7 @@ function ContentEditorInner({
   typeKey: ContentTypeKey
   adminPath?: string
 }) {
+  const router = useRouter()
   const config = getContentConfig(typeKey)
   const [formState, setFormState] = useState<ContentFormState>(() => config.createInitialState())
   const [resolvedPath, setResolvedPath] = useState(adminPath || '')
@@ -500,7 +502,8 @@ function ContentEditorInner({
       setError('')
       setInfo('')
       await deleteContentItem(adminKey, typeKey, resolvedPath)
-      window.location.assign(`/admin/content/${typeKey}?deleted=1`)
+      router.replace(`/admin/content/${typeKey}?deleted=1`)
+      router.refresh()
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : '删除失败')
       setIsDeleting(false)
