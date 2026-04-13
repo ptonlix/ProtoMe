@@ -1,0 +1,29 @@
+<svg
+  width="320"
+  height="320"
+  viewBox="0 0 320 320"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <rect width="320" height="320" rx="72" fill="url(#bg)" />
+  <circle cx="160" cy="124" r="52" fill="#F8FAFC" fill-opacity="0.92" />
+  <path
+    d="M76 258C92 210 122 186 160 186C198 186 228 210 244 258"
+    fill="#F8FAFC"
+    fill-opacity="0.92"
+  />
+  <path
+    d="M76 258C92 210 122 186 160 186C198 186 228 210 244 258"
+    stroke="#0F172A"
+    stroke-opacity="0.08"
+    stroke-width="8"
+    stroke-linecap="round"
+  />
+  <defs>
+    <linearGradient id="bg" x1="28" y1="24" x2="284" y2="292" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F172A" />
+      <stop offset="0.55" stop-color="#1D4ED8" />
+      <stop offset="1" stop-color="#14B8A6" />
+    </linearGradient>
+  </defs>
+</svg>

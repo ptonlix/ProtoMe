@@ -13,6 +13,7 @@ export default function WorklogsPage() {
       title: item.title,
       date: item.date,
       summary: item.summary,
+      coverImage: item.coverImage,
       tags: item.tags ?? [],
     }))
 

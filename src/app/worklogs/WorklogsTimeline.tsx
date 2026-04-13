@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { slug } from 'github-slugger'
 import { formatDate } from 'pliny/utils/formatDate'
+import Image from '@/components/Image'
 import siteMetadata from '@/data/siteMetadata'
 
 export interface WorklogListItem {
@@ -10,6 +11,7 @@ export interface WorklogListItem {
   title: string
   date: string
   summary: string
+  coverImage?: string
   tags: string[]
 }
 
@@ -201,6 +203,17 @@ export default function WorklogsTimeline({ worklogs }: WorklogsTimelineProps) {
                 <li key={worklog.slug} className="relative">
                   <span className="border-ledger-border-strong bg-ledger-accent absolute top-8 left-[5px] hidden h-3 w-3 rounded-full border md:block" />
                   <article className="ledger-surface-muted p-4 md:ml-4">
+                    {worklog.coverImage ? (
+                      <div className="mb-4 overflow-hidden rounded-xl">
+                        <Image
+                          src={worklog.coverImage}
+                          alt={worklog.title}
+                          width={960}
+                          height={540}
+                          className="h-44 w-full object-cover"
+                        />
+                      </div>
+                    ) : null}
                     <div className="text-ledger-muted mb-2 flex flex-wrap items-center gap-2 text-xs">
                       <time dateTime={worklog.date}>
                         {formatDate(worklog.date, siteMetadata.locale)} ·{' '}

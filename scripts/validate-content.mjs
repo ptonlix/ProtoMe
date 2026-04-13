@@ -1,9 +1,11 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import matter from 'gray-matter'
+import { loadWorkspaceEnv, resolveContentWorkspacePaths } from './lib/content-workspace.mjs'
 
 const workspaceRoot = process.cwd()
-const blogRoot = path.join(workspaceRoot, 'data', 'blog')
+loadWorkspaceEnv(workspaceRoot)
+const { blogRoot } = resolveContentWorkspacePaths(workspaceRoot)
 
 async function walk(dir, acc = []) {
   const entries = await fs.readdir(dir, { withFileTypes: true })
@@ -43,6 +45,13 @@ function validatePost(source, filePath) {
 }
 
 async function main() {
+  try {
+    await fs.access(blogRoot)
+  } catch {
+    console.log(`未发现博客目录，跳过校验: ${path.relative(workspaceRoot, blogRoot)}`)
+    return
+  }
+
   const files = await walk(blogRoot)
   for (const file of files) {
     const source = await fs.readFile(file, 'utf8')

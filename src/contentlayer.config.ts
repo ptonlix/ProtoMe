@@ -25,8 +25,11 @@ import rehypePresetMinify from 'rehype-preset-minify'
 import siteMetadata from './data/siteMetadata'
 import { allCoreContent, sortPosts } from 'pliny/utils/contentlayer.js'
 import prettier from 'prettier'
+import { resolveContentWorkspacePaths } from './lib/content-workspace'
 
 const root = process.cwd()
+const projectRoot = path.resolve(root, '..')
+const { contentRoot, publicAssetRoot } = resolveContentWorkspacePaths(projectRoot)
 const isProduction = process.env.NODE_ENV === 'production'
 const privacyOptions = ['public', 'private', 'restricted'] as const
 const projectStatusOptions = ['idea', 'active', 'paused', 'completed', 'archived'] as const
@@ -109,7 +112,7 @@ function createSearchIndex(allBlogs) {
     siteMetadata.search.kbarConfig.searchDocumentsPath
   ) {
     writeFileSync(
-      `public/${path.basename(siteMetadata.search.kbarConfig.searchDocumentsPath)}`,
+      path.join(publicAssetRoot, path.basename(siteMetadata.search.kbarConfig.searchDocumentsPath)),
       JSON.stringify(allCoreContent(sortPosts(allBlogs)))
     )
     console.log('Local search index generated...')
@@ -217,6 +220,7 @@ export const Project = defineDocumentType(() => ({
     startedAt: { type: 'date', required: true },
     updatedAt: { type: 'date', required: true },
     summary: { type: 'string' },
+    coverImage: { type: 'string' },
     stack: { type: 'list', of: { type: 'string' }, default: [] },
     repo: { type: 'string' },
     demo: { type: 'string' },
@@ -237,6 +241,7 @@ export const Worklog = defineDocumentType(() => ({
     title: { type: 'string', required: true },
     summary: { type: 'string', required: true },
     updatedAt: { type: 'date', required: true },
+    coverImage: { type: 'string' },
     projects: { type: 'list', of: { type: 'string' }, default: [] },
     tags: { type: 'list', of: { type: 'string' }, default: [] },
     focus: { type: 'list', of: { type: 'string' }, default: [] },
@@ -248,7 +253,7 @@ export const Worklog = defineDocumentType(() => ({
 }))
 
 export default makeSource({
-  contentDirPath: 'data',
+  contentDirPath: contentRoot,
   documentTypes: [Blog, Authors, Profile, About, Project, Worklog],
   mdx: {
     cwd: process.cwd(),
@@ -274,7 +279,7 @@ export default makeSource({
       ],
       rehypeKatex,
       rehypeKatexNoTranslate,
-      [rehypeCitation, { path: path.join(root, 'data') }],
+      [rehypeCitation, { path: contentRoot }],
       [rehypePrismPlus, { defaultLanguage: 'js', ignoreMissing: true }],
       rehypePresetMinify,
     ],

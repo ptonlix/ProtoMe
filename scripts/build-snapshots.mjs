@@ -1,16 +1,16 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import matter from 'gray-matter'
+import { loadWorkspaceEnv, resolveContentWorkspacePaths } from './lib/content-workspace.mjs'
 
 const workspaceRoot = path.resolve(import.meta.dirname, '..')
-const dataRoot = path.join(workspaceRoot, 'data')
-const snapshotDir = path.join(workspaceRoot, 'deploy', 'snapshots')
-const profileFile = path.join(dataRoot, 'profile', 'default.mdx')
-const projectsRoot = path.join(dataRoot, 'projects')
-const blogRoot = path.join(dataRoot, 'blog')
-const worklogsRoot = path.join(dataRoot, 'worklogs')
-const blogStyleFile = path.join(dataRoot, 'system', 'blog-style.mdx')
-const worklogFocusFile = path.join(dataRoot, 'system', 'worklog-focus.mdx')
+loadWorkspaceEnv(workspaceRoot)
+const { snapshotRoot, profileRoot, projectsRoot, blogRoot, worklogsRoot, systemRoot } =
+  resolveContentWorkspacePaths(workspaceRoot)
+const snapshotDir = snapshotRoot
+const profileFile = path.join(profileRoot, 'default.mdx')
+const blogStyleFile = path.join(systemRoot, 'blog-style.mdx')
+const worklogFocusFile = path.join(systemRoot, 'worklog-focus.mdx')
 
 function normalizeString(value) {
   return typeof value === 'string' ? value.trim() : ''

@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import Logo from '@/data/logo.svg'
+import Image from '@/components/Image'
+import siteMetadata from '@/data/siteMetadata'
 
 const storageKey = 'protome-admin-key'
 
@@ -41,7 +42,7 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
       <div className="flex min-h-[70vh] items-center justify-center px-6 py-12">
         <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-white/85 p-8 text-center shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-950/70">
           <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900">
-            <Logo className="h-full w-full text-slate-900 dark:text-slate-100" />
+            <Image src={siteMetadata.siteLogo} alt="ProtoMe logo" width={28} height={28} />
           </div>
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
             正在加载后台鉴权状态
@@ -144,16 +145,21 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
                   <div className="relative flex h-64 w-64 items-center justify-center rounded-full border border-white/20">
                     <div className="absolute h-48 w-48 rounded-full border border-dashed border-white/30" />
                     <div className="flex h-32 w-32 rotate-12 items-center justify-center rounded-3xl border border-white/40 bg-white/10 p-5 shadow-2xl backdrop-blur-md">
-                      <Logo className="h-full w-full text-white/90" />
+                      <Image
+                        src={siteMetadata.siteLogo}
+                        alt="ProtoMe logo"
+                        width={88}
+                        height={88}
+                      />
                     </div>
                   </div>
 
                   <div className="mt-12 space-y-2 text-center">
-                    <h2 className="text-xl font-bold tracking-wide text-white">ProtoMe Core</h2>
+                    <h2 className="text-xl font-bold tracking-wide text-white">ProtoMe Example</h2>
                     <p className="text-sm leading-relaxed text-blue-100/80">
-                      AI-Native Personal Information Architecture.
+                      公开仓库默认提供示例内容结构。
                       <br />
-                      Securely manage your MDX contents.
+                      真实资料建议维护在私有工作区中。
                     </p>
                   </div>
                 </div>
@@ -167,7 +173,7 @@ export default function AdminAuthGate({ children }: AdminAuthGateProps) {
                 <span className="font-semibold tracking-[0.22em] text-slate-500 uppercase dark:text-slate-400">
                   System Tailnote
                 </span>
-                <span>CyberFD · © 2026 · ProtoMe V1.0.0</span>
+                <span>ProtoMe · © 2026 · Example Workspace Template</span>
               </div>
               <div className="flex items-center gap-4">
                 <Link

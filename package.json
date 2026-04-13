@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "protome": "node ./scripts/protome.mjs",
     "dev": "pnpm --filter protome-web dev",
     "dev:api": "pnpm --filter protome-api dev",
     "dev:profile-api": "pnpm --filter protome-profile-api dev",

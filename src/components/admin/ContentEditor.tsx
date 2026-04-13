@@ -246,6 +246,7 @@ function ContentEditorInner({
   const [resolvedPath, setResolvedPath] = useState(adminPath || '')
   const [publishState, setPublishState] = useState<PublishState | null>(null)
   const [assetSnippet, setAssetSnippet] = useState('')
+  const [assetCopied, setAssetCopied] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(Boolean(adminPath) || config.mode === 'singleton')
   const [error, setError] = useState('')
@@ -483,9 +484,23 @@ function ContentEditorInner({
       setError('')
       const response = await uploadContentAsset(adminKey, typeKey, resolvedPath, file)
       setAssetSnippet(response.asset.markdown)
-      setInfo(`资源已上传：${response.asset.src}`)
+      setAssetCopied(false)
+      setInfo(`资源已上传，复制下面的 Markdown 即可直接用于文章：${response.asset.src}`)
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : '资源上传失败')
+    }
+  }
+
+  const handleCopyAssetSnippet = async () => {
+    if (!assetSnippet) return
+
+    try {
+      await navigator.clipboard.writeText(assetSnippet)
+      setAssetCopied(true)
+      setInfo('Markdown 已复制，可直接粘贴到文章正文中使用')
+      window.setTimeout(() => setAssetCopied(false), 2000)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : '复制失败，请手动复制')
     }
   }
 
@@ -597,7 +612,8 @@ function ContentEditorInner({
           <div className="mb-4 space-y-1.5">
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">资源上传</div>
             <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-              首次新建内容请先保存，再上传资源文件。
+              首次新建内容请先保存，再上传资源文件。上传完成后，直接复制下面生成的 Markdown
+              即可粘贴到正文中使用。
             </p>
           </div>
           <div className="space-y-4">
@@ -615,12 +631,30 @@ function ContentEditorInner({
             </label>
 
             {assetSnippet ? (
-              <textarea
-                readOnly
-                value={assetSnippet}
-                rows={4}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
-              />
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[11px] leading-5 text-slate-500 dark:text-slate-400">
+                    复制这段 Markdown，直接粘贴进文章正文即可显示图片。
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleCopyAssetSnippet}
+                    className={`inline-flex shrink-0 items-center rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                      assetCopied
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
+                        : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-700 dark:hover:bg-slate-900'
+                    }`}
+                  >
+                    {assetCopied ? '已复制' : '复制 Markdown'}
+                  </button>
+                </div>
+                <textarea
+                  readOnly
+                  value={assetSnippet}
+                  rows={4}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-3 font-mono text-xs text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                />
+              </div>
             ) : null}
           </div>
         </section>

@@ -37,6 +37,7 @@ export default function Projects() {
             key={project.id}
             title={project.title}
             description={project.summary ?? '暂无项目摘要。'}
+            imgSrc={project.coverImage}
             href={project.demo || project.repo}
             status={project.status}
             role={project.role}

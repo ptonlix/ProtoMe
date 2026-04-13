@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import siteMetadata from '@/data/siteMetadata'
 import headerNavLinks from '@/data/headerNavLinks'
-import Logo from '@/data/logo.svg'
+import Image from './Image'
 import Link from './Link'
 import MobileNav from './MobileNav'
 import ThemeSwitch from './ThemeSwitch'
@@ -45,7 +45,7 @@ const Header = () => {
         >
           <div className="flex min-w-0 items-center gap-3">
             <div className="border-ledger-border bg-ledger-panel-muted text-ledger-text rounded-xl border p-2">
-              <Logo />
+              <Image src={siteMetadata.siteLogo} alt="ProtoMe logo" width={28} height={28} />
             </div>
             <div className="min-w-0">
               <p className="ledger-kicker">ProtoMe</p>

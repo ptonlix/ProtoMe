@@ -1,6 +1,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import dotenv from 'dotenv'
+import { resolveContentWorkspacePaths } from './content-workspace.js'
 
 export const workspaceRoot = path.resolve(import.meta.dirname, '../..')
 const rootEnvPath = path.join(workspaceRoot, '.env')
@@ -14,11 +15,13 @@ if (fs.existsSync(rootEnvLocalPath)) {
   dotenv.config({ path: rootEnvLocalPath, override: true })
 }
 
-export const dataRoot = path.join(workspaceRoot, 'data')
-export const blogRoot = path.join(dataRoot, 'blog')
-export const publicRoot = path.join(workspaceRoot, 'public')
-export const imagesRoot = path.join(publicRoot, 'static', 'images')
-export const postsImageRoot = path.join(publicRoot, 'static', 'images', 'posts')
+const contentWorkspacePaths = resolveContentWorkspacePaths(workspaceRoot)
+export const contentWorkspaceRoot = contentWorkspacePaths.contentWorkspaceRoot
+export const dataRoot = contentWorkspacePaths.dataRoot
+export const blogRoot = contentWorkspacePaths.blogRoot
+export const publicRoot = contentWorkspacePaths.publicRoot
+export const imagesRoot = contentWorkspacePaths.imagesRoot
+export const postsImageRoot = contentWorkspacePaths.postsImageRoot
 export const isProduction = process.env.NODE_ENV === 'production'
 export const defaultDevAdminKey = 'protome-local-dev-key'
 export const adminOrigin = process.env.ADMIN_APP_ORIGIN ?? 'http://localhost:3000'

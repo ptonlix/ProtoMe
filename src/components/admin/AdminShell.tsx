@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState, useTransition } from 'react'
-import Logo from '@/data/logo.svg'
+import Image from '@/components/Image'
+import siteMetadata from '@/data/siteMetadata'
 import { fetchPublishState, publishAllContent } from './api'
 import type { PublishState } from './types'
 
@@ -107,7 +108,7 @@ export default function AdminShell({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900">
-                <Logo className="h-full w-full text-slate-900 dark:text-slate-100" />
+                <Image src={siteMetadata.siteLogo} alt="ProtoMe logo" width={24} height={24} />
               </div>
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium tracking-[0.24em] text-slate-400 uppercase dark:text-slate-500">

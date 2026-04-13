@@ -4,7 +4,14 @@ import multer from 'multer'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
-import { adminOrigin, maxUploadSize, port, resolveAdminKey, workspaceRoot } from './config.js'
+import {
+  adminOrigin,
+  maxUploadSize,
+  port,
+  publicRoot,
+  resolveAdminKey,
+  workspaceRoot,
+} from './config.js'
 import {
   createPost,
   createContent,
@@ -56,6 +63,14 @@ function formatBytes(bytes: number) {
   }
 
   return `${bytes}B`
+}
+
+function toPublicAssetUrl(outputPath: string) {
+  const relativePath = path.relative(publicRoot, outputPath).replace(/\\/g, '/')
+  if (!relativePath || relativePath.startsWith('..')) {
+    throw new Error('资源公开路径生成失败')
+  }
+  return `/${relativePath}`
 }
 
 function requireAdmin(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -261,15 +276,13 @@ app.post('/api/admin/content/item/assets', upload.single('file'), async (req, re
     const outputPath = path.join(uploadDir, fileName)
     await fs.writeFile(outputPath, req.file.buffer)
 
-    const relativePath = path
-      .relative(path.join(workspaceRoot, 'public'), outputPath)
-      .replace(/\\/g, '/')
+    const publicSrc = toPublicAssetUrl(outputPath)
 
     res.status(201).json({
       asset: {
-        src: `/${relativePath}`,
+        src: publicSrc,
         alt: content.title,
-        markdown: `![${content.title}](/${relativePath})`,
+        markdown: `![${content.title}](${publicSrc})`,
         size: req.file.size,
         mimeType: req.file.mimetype,
       },
@@ -359,15 +372,13 @@ app.post('/api/admin/post/assets', upload.single('file'), async (req, res) => {
     const outputPath = path.join(uploadDir, fileName)
     await fs.writeFile(outputPath, req.file.buffer)
 
-    const relativePath = path
-      .relative(path.join(workspaceRoot, 'public'), outputPath)
-      .replace(/\\/g, '/')
+    const publicSrc = toPublicAssetUrl(outputPath)
 
     res.status(201).json({
       asset: {
-        src: `/${relativePath}`,
+        src: publicSrc,
         alt: post.title,
-        markdown: `![${post.title}](/${relativePath})`,
+        markdown: `![${post.title}](${publicSrc})`,
         size: req.file.size,
         mimeType: req.file.mimetype,
       },

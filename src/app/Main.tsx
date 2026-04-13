@@ -60,6 +60,7 @@ function buildSkillGroups(skills: string[], stacks: string[]) {
 
 export default function Home({ posts, profile, projects, worklogs }) {
   const heroName = profile?.name ?? siteMetadata.author
+  const heroAvatar = profile?.avatar?.trim() || '/static/images/avatar.svg'
   const heroHeadline = profile?.headline ?? siteMetadata.description
   const heroEmail = profile?.email ?? siteMetadata.email
   const heroLocation = profile?.location
@@ -115,7 +116,7 @@ export default function Home({ posts, profile, projects, worklogs }) {
             <div className="flex items-center gap-4">
               <div className="border-ledger-border bg-ledger-panel-muted relative h-20 w-20 overflow-hidden rounded-2xl border">
                 <Image
-                  src="/static/images/avatar.png"
+                  src={heroAvatar}
                   alt={`${heroName} avatar`}
                   fill
                   className="object-cover"

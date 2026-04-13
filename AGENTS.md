@@ -1,21 +1,103 @@
-<!-- OPENSPEC:START -->
+# ProtoMe AGENTS.md
 
-# OpenSpec Instructions
+## 1. 沟通与执行规则
 
-These instructions are for AI assistants working in this project.
+- 只使用中文回答，包括分析、说明、注释、提交说明与文档更新。
+- 优先直接落地执行，不要停留在空泛分析；能直接修改和验证的任务就直接推进。
+- 先理解上下文，再做最小必要改动；避免未经确认的大范围重构。
+- 回复尽量简洁，优先给出结论、改动点、验证结果、剩余风险。
+- 只有在涉及不可逆操作、数据边界变化、架构方向变化或高风险删除时，才暂停并请求用户确认。
 
-Always open `@/openspec/AGENTS.md` when the request:
+## 2. 项目定位
 
-- Mentions planning or proposals (words like proposal, spec, change, plan)
-- Introduces new capabilities, breaking changes, architecture shifts, or big performance/security work
-- Sounds ambiguous and you need the authoritative spec before coding
+- ProtoMe 不是普通博客模板，而是一个本地优先的个人工作平台。
+- 它同时包含内容站点、文件型后台、只读资料暴露能力，以及面向 Agent 的信息出口。
+- 处理任务时，优先把这个项目理解为“个人品牌基础设施”而非单一博客系统。
 
-Use `@/openspec/AGENTS.md` to learn:
+## 3. 项目关键事实
 
-- How to create and apply change proposals
-- Spec format and conventions
-- Project structure and guidelines
+- 私有真实内容通过 `PROTOME_CONTENT_WORKSPACE` 指向的工作区管理。
+- 默认私有工作区通常为 `.protome-workspace/`。
+- 私有工作区中：
+  - `.protome-workspace/data/` 存放真实内容。
+  - `.protome-workspace/public/` 存放真实静态资源。
+- 仓库根目录的 `data/` 和 `public/` 默认是公开示例模板，不应继续写入真实个人资料。
+- 任何涉及 `profile`、`about`、`projects`、`worklogs`、`blog`、`authors` 的修改，都要先确认当前读写的是私有工作区还是公开示例目录。
+- 图片、头像、logo、项目封面、文章配图等公开访问路径，统一使用 `/static/images/...`。
+- 不允许把文件系统路径如 `/.protome-workspace/public/...`、`/../.protome-workspace/...` 写进文章、配置或 API 返回值。
 
-Keep this managed block so 'openspec update' can refresh the instructions.
+## 4. 代码修改原则
 
-<!-- OPENSPEC:END -->
+- 优先修根因，不做只掩盖问题的表层修补。
+- 保持现有架构方向一致，避免引入重复配置、双轨逻辑或隐性兼容层。
+- 不要回退、覆盖或清理用户已有改动，除非用户明确要求。
+- 不要把真实个人内容重新写回公开仓库模板目录。
+- 除非用户明确要求，否则不要顺手改与当前任务无关的代码风格或目录结构。
+- 注释只在必要处添加，且使用中文，重点解释边界、约束和不直观逻辑。
+
+## 5. 内容与私有工作区约定
+
+- 涉及内容源读取时，优先检查是否已经通过工作区解析模块接入 `PROTOME_CONTENT_WORKSPACE`。
+- 涉及图片上传、资源复制、文章插图、封面图、头像、logo 时，必须同时检查：
+  - 后端写入位置是否在私有工作区 `public/` 下；
+  - 前端访问路径是否为站点公开路径；
+  - 返回给后台编辑器的 Markdown 是否可直接粘贴使用。
+- 管理后台上传资源后的返回值中：
+  - `src` 必须是站点可访问路径；
+  - `markdown` 必须可直接复制到正文中使用；
+  - 不得暴露磁盘真实路径。
+- 如果修改了内容模型、路径推导或静态资源规则，要同步检查前台页面、后台编辑器、构建脚本、快照脚本和初始化命令。
+
+## 6. 工具与工作方式
+
+- 搜索文本或文件时，优先使用 `rg`。
+- 能做局部验证时，不要直接跑全量重任务；优先选择最小可证明改动正确的校验。
+- 修改代码时，优先使用精确编辑；避免无关格式化导致的大量 diff。
+- 发现工作区已有脏改动时，应在当前改动基础上兼容推进，不得擅自回退。
+
+## 7. 验证要求
+
+- 每次修改后，至少执行与改动直接相关的最小验证。
+- 可选验证包括但不限于：
+  - 单文件 `eslint`
+  - 对应包的 `typecheck`
+  - 相关构建或脚本验证
+- 如果因为环境、耗时或依赖原因无法验证，必须明确说明未验证项、原因和潜在影响。
+- 交付结果中默认包含：
+  - 改了什么
+  - 为什么这样改
+  - 验证结果
+  - 是否还有剩余风险
+
+## 8. 高风险操作确认规则
+
+执行下列操作前，必须得到用户明确确认：
+
+- 删除、覆盖、迁移私有工作区中的真实内容或资源
+- 批量重写 `data/`、`public/`、`.protome-workspace/` 下的文件
+- 修改环境变量、部署配置、发布流程、云端同步逻辑
+- 执行 `git commit`、`git push`、`git reset`、强制覆盖或不可逆清理操作
+- 改变公开数据与私有数据的边界
+- 删除用户已有图片、文章、项目、工作记录等真实内容
+
+确认前应说明：
+
+- 操作类型
+- 影响范围
+- 潜在风险
+- 等待用户明确回复“确认”后再继续
+
+## 9. 常见任务提醒
+
+- 如果任务与 README、品牌文案、示例内容有关，要区分“公开仓库示例表达”与“用户真实个人表达”。
+- 如果任务与管理后台有关，除了接口逻辑，还要检查文案、复制体验、错误提示是否完整。
+- 如果任务与文章图片有关，要检查：
+  - 上传返回值
+  - Markdown 插入结果
+  - 站点页面渲染
+  - 私有工作区文件是否落在正确目录
+- 如果任务与初始化流程有关，要检查 `pnpm protome init-workspace` 是否仍与当前目录结构保持一致。
+
+## 10. 目标
+
+你的目标不是只“把代码改完”，而是确保 ProtoMe 在本地优先、私有内容隔离、公开模板去个人化、Agent 可消费这几条核心原则下持续可维护。
