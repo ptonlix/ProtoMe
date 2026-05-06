@@ -8,6 +8,11 @@ import { allBlogs } from '../src/.contentlayer/generated/index.mjs'
 import { sortPosts } from 'pliny/utils/contentlayer.js'
 
 const outputFolder = process.env.EXPORT ? 'out' : 'public'
+const isProduction = process.env.NODE_ENV === 'production'
+
+function getPublishedBlogs(blogs) {
+  return isProduction ? blogs.filter((blog) => blog.draft !== true) : blogs
+}
 
 const generateRssItem = (config, post) => `
   <item>
@@ -38,7 +43,7 @@ const generateRss = (config, posts, page = 'feed.xml') => `
 `
 
 async function generateRSS(config, allBlogs, page = 'feed.xml') {
-  const publishPosts = allBlogs.filter((post) => post.draft !== true)
+  const publishPosts = getPublishedBlogs(allBlogs)
   // RSS for blog post
   if (publishPosts.length > 0) {
     const rss = generateRss(config, sortPosts(publishPosts))
@@ -47,7 +52,9 @@ async function generateRSS(config, allBlogs, page = 'feed.xml') {
 
   if (publishPosts.length > 0) {
     for (const tag of Object.keys(tagData)) {
-      const filteredPosts = allBlogs.filter((post) => post.tags.map((t) => slug(t)).includes(tag))
+      const filteredPosts = publishPosts.filter((post) =>
+        post.tags.map((t) => slug(t)).includes(tag)
+      )
       const rss = generateRss(config, filteredPosts, `tags/${tag}/${page}`)
       const rssPath = path.join(outputFolder, 'tags', tag)
       mkdirSync(rssPath, { recursive: true })

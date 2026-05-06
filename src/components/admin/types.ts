@@ -44,11 +44,3 @@ export type AdminContentListResponse = {
   totalPages: number
   availableGroups: string[]
 }
-
-export type PublishState = {
-  status: 'idle' | 'running' | 'success' | 'failed'
-  message: string
-  currentPath: string | null
-  startedAt: string | null
-  finishedAt: string | null
-}

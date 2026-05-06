@@ -11,13 +11,11 @@ import {
   createContentItem,
   deleteContentItem,
   fetchContentItem,
-  fetchPublishState,
-  publishContentItem,
   updateContentItem,
   uploadContentAsset,
 } from './api'
 import { getContentConfig, type ContentFieldConfig, type ContentFormState } from './content-config'
-import type { ContentTypeKey, PublishState, StatusTone } from './types'
+import type { ContentTypeKey, StatusTone } from './types'
 
 const MdxCodeEditor = dynamic(() => import('./MdxCodeEditor'), {
   ssr: false,
@@ -31,8 +29,6 @@ const MdxCodeEditor = dynamic(() => import('./MdxCodeEditor'), {
 const inputClassName =
   'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-200 focus:bg-white focus:ring-4 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-sky-500/30 dark:focus:ring-sky-500/10'
 
-const PUBLISH_SUCCESS_VISIBLE_MS = 8000
-
 function formatDateTimeLabel(value: string | null) {
   if (!value) return '暂无记录'
   return new Date(value).toLocaleString('zh-CN', {
@@ -41,16 +37,6 @@ function formatDateTimeLabel(value: string | null) {
     hour: '2-digit',
     minute: '2-digit',
   })
-}
-
-function normalizePublishState(state: PublishState | null) {
-  if (!state || state.status === 'idle') return null
-  if (state.status !== 'success') return state
-
-  const finishedAt = state.finishedAt ? new Date(state.finishedAt).getTime() : Number.NaN
-  if (Number.isNaN(finishedAt)) return null
-
-  return Date.now() - finishedAt < PUBLISH_SUCCESS_VISIBLE_MS ? state : null
 }
 
 function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
@@ -65,35 +51,6 @@ function StatusPill({ label, tone }: { label: string; tone: StatusTone }) {
 
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${className}`}>{label}</span>
-  )
-}
-
-function PublishBanner({ state }: { state: PublishState | null }) {
-  if (!state) return null
-
-  const className =
-    state.status === 'success'
-      ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200'
-      : state.status === 'failed'
-        ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'
-        : state.status === 'running'
-          ? 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200'
-          : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300'
-
-  return (
-    <div className={`rounded-2xl border p-4 text-sm ${className}`}>
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold tracking-[0.28em] uppercase">Publish</span>
-        <span className="rounded-full bg-black/5 px-2.5 py-1 text-xs font-semibold capitalize dark:bg-white/10">
-          {state.status}
-        </span>
-      </div>
-      <p className="mt-3 leading-6">{state.message}</p>
-      <div className="mt-3 flex flex-wrap gap-4 text-xs opacity-80">
-        <span>开始：{formatDateTimeLabel(state.startedAt)}</span>
-        <span>结束：{formatDateTimeLabel(state.finishedAt)}</span>
-      </div>
-    </div>
   )
 }
 
@@ -244,7 +201,6 @@ function ContentEditorInner({
   const config = getContentConfig(typeKey)
   const [formState, setFormState] = useState<ContentFormState>(() => config.createInitialState())
   const [resolvedPath, setResolvedPath] = useState(adminPath || '')
-  const [publishState, setPublishState] = useState<PublishState | null>(null)
   const [assetSnippet, setAssetSnippet] = useState('')
   const [assetCopied, setAssetCopied] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -334,15 +290,12 @@ function ContentEditorInner({
   useEffect(() => {
     let active = true
 
-    Promise.all([
-      fetchPublishState(adminKey),
-      adminPath || config.mode === 'singleton'
-        ? fetchContentItem(adminKey, typeKey, adminPath)
-        : Promise.resolve(null),
-    ])
-      .then(([publishResponse, itemResponse]) => {
+    ;(adminPath || config.mode === 'singleton'
+      ? fetchContentItem(adminKey, typeKey, adminPath)
+      : Promise.resolve(null)
+    )
+      .then((itemResponse) => {
         if (!active) return
-        setPublishState(normalizePublishState(publishResponse.publish))
 
         if (itemResponse) {
           const nextState = config.fromItem(itemResponse.item)
@@ -373,46 +326,6 @@ function ContentEditorInner({
   }, [adminKey, adminPath, config, typeKey])
 
   useEffect(() => {
-    if (publishState?.status !== 'running') return
-
-    let active = true
-    const intervalId = window.setInterval(async () => {
-      try {
-        const publishResponse = await fetchPublishState(adminKey)
-        if (!active) return
-        setPublishState(normalizePublishState(publishResponse.publish))
-      } catch {
-        if (!active) return
-        window.clearInterval(intervalId)
-      }
-    }, 2000)
-
-    return () => {
-      active = false
-      window.clearInterval(intervalId)
-    }
-  }, [adminKey, publishState?.status])
-
-  useEffect(() => {
-    if (publishState?.status !== 'success' || !publishState.finishedAt) return
-
-    const finishedAt = new Date(publishState.finishedAt).getTime()
-    if (Number.isNaN(finishedAt)) {
-      setPublishState(null)
-      return
-    }
-
-    const remainingMs = Math.max(PUBLISH_SUCCESS_VISIBLE_MS - (Date.now() - finishedAt), 0)
-    const timeoutId = window.setTimeout(() => {
-      setPublishState((current) => (current?.status === 'success' ? null : current))
-    }, remainingMs)
-
-    return () => {
-      window.clearTimeout(timeoutId)
-    }
-  }, [publishState])
-
-  useEffect(() => {
     if (!immersive) return
 
     document.body.classList.add('admin-immersive')
@@ -432,21 +345,12 @@ function ContentEditorInner({
     }
   }, [immersive])
 
-  const saveContent = (publishAfterSave: boolean) => {
+  const saveContent = () => {
     startTransition(async () => {
       try {
         setError('')
         setInfo('')
-
-        const nextState =
-          publishAfterSave && typeKey === 'blog'
-            ? {
-                ...formState,
-                draft: false,
-              }
-            : formState
-
-        const payload = config.toPayload(nextState)
+        const payload = config.toPayload(formState)
         const response = resolvedPath
           ? await updateContentItem(adminKey, typeKey, resolvedPath, payload)
           : await createContentItem(adminKey, typeKey, payload)
@@ -457,16 +361,6 @@ function ContentEditorInner({
         setSavedAt(new Date().toISOString())
         setLastSavedSnapshot(JSON.stringify(config.toPayload(normalizedState)))
         setInfo(`已保存到 ${response.item.filePath}`)
-
-        if (publishAfterSave) {
-          const publishResponse = await publishContentItem(
-            adminKey,
-            typeKey,
-            response.item.adminPath
-          )
-          setPublishState(normalizePublishState(publishResponse.publish))
-          setInfo(`已触发发布：${publishResponse.publish.message}`)
-        }
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : '保存失败')
       }
@@ -508,7 +402,7 @@ function ContentEditorInner({
     if (!resolvedPath) return
 
     const confirmed = window.confirm(
-      `确认删除“${previewTitle}”吗？\n\n这会同时删除内容文件和该内容关联的资源目录。\n删除后不会自动发布，请稍后统一执行发布。`
+      `确认删除“${previewTitle}”吗？\n\n这会同时删除内容文件和该内容关联的资源目录。`
     )
     if (!confirmed) return
 
@@ -542,9 +436,9 @@ function ContentEditorInner({
         }`}
       >
         <div className="mb-4 space-y-1.5">
-          <div className="text-sm font-bold text-slate-800 dark:text-slate-100">发布状态</div>
+          <div className="text-sm font-bold text-slate-800 dark:text-slate-100">内容概览</div>
           <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-            保存、发布和当前状态都会集中显示在这里。
+            当前内容的状态、正文规模和基础信息会集中显示在这里。
           </p>
         </div>
         <div className="space-y-4">
@@ -566,7 +460,6 @@ function ContentEditorInner({
               </p>
             </div>
           </div>
-          <PublishBanner state={publishState} />
         </div>
       </section>
 
@@ -722,19 +615,11 @@ function ContentEditorInner({
             ) : null}
             <button
               type="button"
-              onClick={() => saveContent(false)}
-              disabled={isPending || isDeleting || loading}
-              className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-            >
-              {isPending ? '保存中...' : '保存内容'}
-            </button>
-            <button
-              type="button"
-              onClick={() => saveContent(true)}
+              onClick={saveContent}
               disabled={isPending || isDeleting || loading}
               className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-60"
             >
-              保存并发布
+              {isPending ? '保存中...' : '保存内容'}
             </button>
             {config.mode === 'collection' && resolvedPath ? (
               <button

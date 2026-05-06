@@ -885,10 +885,10 @@ const contentRegistry: Record<ContentTypeKey, ContentRegistryEntry> = {
     type: {
       key: 'blog',
       label: '文章',
-      description: '管理 Blog 文章、草稿与发布状态',
+      description: '管理 Blog 文章、草稿与摘要',
       mode: 'collection',
       supportsAssets: true,
-      statusFilterLabel: '发布状态',
+      statusFilterLabel: '内容状态',
       statusOptions: [
         { value: '', label: '全部状态' },
         { value: 'draft', label: '仅草稿' },

@@ -5,7 +5,6 @@ import type {
   AdminContentListResponse,
   AdminContentType,
   ContentTypeKey,
-  PublishState,
 } from './types'
 
 const adminApiBaseUrl =
@@ -118,38 +117,6 @@ export async function deleteContentItem(adminKey: string, type: ContentTypeKey, 
     }
   }>(`/api/admin/content/item?${params.toString()}`, {
     method: 'DELETE',
-    adminKey,
-  })
-}
-
-export async function publishContentItem(
-  adminKey: string,
-  type: ContentTypeKey,
-  adminPath?: string
-) {
-  const params = new URLSearchParams({ type })
-  if (adminPath) {
-    params.set('path', adminPath)
-  }
-
-  return request<{ publish: PublishState }>(
-    `/api/admin/content/item/publish?${params.toString()}`,
-    {
-      method: 'POST',
-      body: {},
-      adminKey,
-    }
-  )
-}
-
-export async function fetchPublishState(adminKey: string) {
-  return request<{ publish: PublishState }>('/api/admin/publish-status', { adminKey })
-}
-
-export async function publishAllContent(adminKey: string) {
-  return request<{ publish: PublishState }>('/api/admin/publish', {
-    method: 'POST',
-    body: {},
     adminKey,
   })
 }

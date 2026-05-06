@@ -228,7 +228,7 @@ function ContentIndexInner({
         {error ? <p className="px-6 py-4 text-sm text-rose-600">{error}</p> : null}
         {deletedFlag ? (
           <p className="px-6 py-4 text-sm text-amber-700 dark:text-amber-300">
-            内容与资源目录已删除，当前变更尚未发布，请稍后统一执行发布。
+            内容与资源目录已删除。
           </p>
         ) : null}
         {loading ? <p className="px-6 py-4 text-sm text-slate-500">正在加载内容...</p> : null}

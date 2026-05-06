@@ -1,4 +1,9 @@
-import { defineDocumentType, ComputedFields, makeSource } from 'contentlayer2/source-files'
+import {
+  defineDocumentType,
+  ComputedFields,
+  makeSource,
+  contentDirExcludeDefault,
+} from 'contentlayer2/source-files'
 import { writeFileSync } from 'fs'
 import readingTime from 'reading-time'
 import { slug } from 'github-slugger'
@@ -254,6 +259,7 @@ export const Worklog = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: contentRoot,
+  contentDirExclude: [...contentDirExcludeDefault, 'system'],
   documentTypes: [Blog, Authors, Profile, About, Project, Worklog],
   mdx: {
     cwd: process.cwd(),
